@@ -1,0 +1,117 @@
+{
+  "generated_at": "",
+  "window_days": 56,
+  "short_window_days": 14,
+  "long_window_days": 112,
+  "end_date": "",
+  "source": {
+    "input_file": "",
+    "activity_count": 0,
+    "window_activity_count": 0
+  },
+  "disciplines": {
+    "run": {
+      "units": {
+        "volume": "km",
+        "session_distance": "km",
+        "session_duration": "min",
+        "long_session": "km"
+      },
+      "weekly": {
+        "sessions_median": 0,
+        "volume_median": 0,
+        "volume_iqr": [
+          0,
+          0
+        ],
+        "zero_weeks": 0,
+        "volume_cv": 0,
+        "weeks_tracked": 0
+      },
+      "session": {
+        "distance_median": 0,
+        "duration_median_min": 0,
+        "sessions_tracked": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0
+      },
+      "confidence": "low"
+    },
+    "bike": {
+      "units": {
+        "volume": "hours",
+        "session_distance": "km",
+        "session_duration": "min",
+        "long_session": "hours"
+      },
+      "weekly": {
+        "sessions_median": 0,
+        "volume_median": 0,
+        "volume_iqr": [
+          0,
+          0
+        ],
+        "zero_weeks": 0,
+        "volume_cv": 0,
+        "weeks_tracked": 0
+      },
+      "session": {
+        "distance_median": 0,
+        "duration_median_min": 0,
+        "sessions_tracked": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0
+      },
+      "confidence": "low"
+    },
+    "swim": {
+      "units": {
+        "volume": "km",
+        "session_distance": "km",
+        "session_duration": "min",
+        "long_session": "km"
+      },
+      "weekly": {
+        "sessions_median": 0,
+        "volume_median": 0,
+        "volume_iqr": [
+          0,
+          0
+        ],
+        "zero_weeks": 0,
+        "volume_cv": 0,
+        "weeks_tracked": 0
+      },
+      "session": {
+        "distance_median": 0,
+        "duration_median_min": 0,
+        "sessions_tracked": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0
+      },
+      "pace": {
+        "distance_weighted_sec_per_100m": 0,
+        "median_sec_per_100m": 0,
+        "sample_count": 0
+      },
+      "confidence": "low"
+    }
+  },
+  "context_windows": {
+    "short_window": {
+      "start_date": "",
+      "end_date": ""
+    },
+    "baseline_window": {
+      "start_date": "",
+      "end_date": ""
+    },
+    "long_window": {
+      "start_date": "",
+      "end_date": ""
+    }
+  }
+}

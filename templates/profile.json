@@ -1,0 +1,16 @@
+{
+  "athlete": {
+    "name": "",
+    "age": 0,
+    "weight_kg": 0,
+    "experience_years": 0
+  },
+  "preferences": {
+    "week_start": "monday",
+    "rest_day": "sunday"
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  }
+}

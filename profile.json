@@ -1,0 +1,42 @@
+{
+  "athlete": {
+    "name": "Mason Lauder",
+    "strava_id": 69118240,
+    "age": 24,
+    "weight_kg": 80,
+    "sex": "M",
+    "experience_years": 5,
+    "location": "Australia"
+  },
+  "preferences": {
+    "week_start": "monday",
+    "rest_day": "sunday"
+  },
+  "goal": {
+    "summary": "IRONMAN Australia 2027",
+    "event": {
+      "name": "IRONMAN Australia",
+      "location": "Port Macquarie, NSW, Australia",
+      "date": "2027-10-18",
+      "race_type": "full",
+      "distances": {
+        "swim_km": 3.8,
+        "bike_km": 180,
+        "run_km": 42.2
+      },
+      "course": {
+        "swim": "River swim with iconic weir crossing",
+        "bike": "Rolling countryside and coastline",
+        "run": "Flat through town center"
+      },
+      "conditions": {
+        "air_temp_c": [12, 22],
+        "water_temp_c": 23
+      }
+    }
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  }
+}

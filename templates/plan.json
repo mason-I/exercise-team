@@ -1,0 +1,28 @@
+{
+  "week_start": "",
+  "phase": "",
+  "targets": {
+    "run": {
+      "sessions": 0,
+      "volume_km": 0,
+      "long_km": 0
+    },
+    "bike": {
+      "sessions": 0,
+      "volume_hours": 0,
+      "long_hours": 0
+    },
+    "swim": {
+      "sessions": 0,
+      "volume_km": 0,
+      "long_km": 0
+    }
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  },
+  "sessions": [],
+  "notes": [],
+  "flags": []
+}

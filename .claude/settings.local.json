@@ -1,0 +1,33 @@
+{
+ "env": {
+    "ANTHROPIC_AUTH_TOKEN": "b7f1e7b76924431d96f9f09b6e406865.830QoU3lSQKixuKQ",
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "API_TIMEOUT_MS": "3000000"
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": true
+  },
+  "autoUpdatesChannel": "latest"
+  "permissions": {
+    "allow": [
+      "mcp__strava__get-all-activities",
+      "mcp__strava__get-athlete-stats",
+      "Skill(compute-baseline)",
+      "mcp__strava__connect-strava",
+      "mcp__strava__get-recent-activities",
+      "mcp__strava__get-activity-details",
+      "mcp__strava__get-server-version"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "strava"
+  ]
+}
+
+
+
+{
+  
+}

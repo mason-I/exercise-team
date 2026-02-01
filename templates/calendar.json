@@ -1,0 +1,16 @@
+{
+  "generated_at": "",
+  "event": {
+    "date": "",
+    "race_type": "",
+    "race_label": ""
+  },
+  "planning": {
+    "start_date": "",
+    "end_date": "",
+    "week_start": "monday",
+    "total_weeks": 0
+  },
+  "phases": [],
+  "warnings": []
+}
