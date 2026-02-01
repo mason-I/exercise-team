@@ -1,0 +1,59 @@
+{
+  "name": "@masonl/strava-mcp-server",
+  "version": "1.2.1",
+  "description": "MCP server for Strava API",
+  "mcpName": "io.github.r-huijts/strava-mcp",
+  "repository": {
+    "type": "git", 
+    "url": "https://github.com/mason-I/strava-mcp"
+  },
+  "main": "dist/server.js",
+  "bin": {
+    "strava-mcp-server": "./dist/server.js"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "lint": "eslint . --ext .ts",
+    "setup-auth": "tsx scripts/setup-auth.ts",
+    "test": "vitest run",
+    "test:api": "RUN_API_TESTS=true vitest run tests/getActivityStreams.api.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "strava",
+    "llm",
+    "ai"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.0",
+    "open": "^10.1.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "ts-node": "^10.9.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "vitest": "^2.1.8"
+  }
+}
