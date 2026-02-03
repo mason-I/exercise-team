@@ -1,0 +1,99 @@
+{
+  "disciplines": {
+    "run": {
+      "units": {
+        "volume": "km"
+      },
+      "weekly": {
+        "sessions_median": 2,
+        "volume_median": 6.4
+      },
+      "session": {
+        "distance_median": 3,
+        "duration_median_min": 18
+      },
+      "long_session": {
+        "weekly_max_median": 4.2
+      },
+      "confidence": "low",
+      "pace": {
+        "median_sec_per_km": 360
+      },
+      "threshold": {
+        "vthr_mps": 3.5,
+        "quality": "medium"
+      }
+    },
+    "bike": {
+      "units": {
+        "volume": "hours"
+      },
+      "weekly": {
+        "sessions_median": 3,
+        "volume_median": 7
+      },
+      "session": {
+        "distance_median": 30,
+        "duration_median_min": 90
+      },
+      "long_session": {
+        "weekly_max_median": 3.5
+      },
+      "confidence": "medium",
+      "threshold": {
+        "ftp_w_band": [
+          200,
+          240
+        ],
+        "quality": "medium"
+      }
+    },
+    "swim": {
+      "units": {
+        "volume": "km"
+      },
+      "weekly": {
+        "sessions_median": 0,
+        "volume_median": 0
+      },
+      "session": {
+        "distance_median": 0,
+        "duration_median_min": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0
+      },
+      "confidence": "low",
+      "pace": {
+        "median_sec_per_100m": 180
+      },
+      "threshold": {
+        "css_sec_per_100m": null,
+        "quality": "unknown"
+      }
+    }
+  },
+  "composite": {
+    "flags": {
+      "high_cardio_low_impact": true
+    }
+  },
+  "transfer": {
+    "run_intro_weekly_time_min_range": [
+      45,
+      90
+    ],
+    "run_easy_pace_sec_per_km_range": [
+      360,
+      420
+    ]
+  },
+  "restart": {
+    "week1": {
+      "run": {
+        "volume_cap": 5,
+        "long_cap": 3
+      }
+    }
+  }
+}

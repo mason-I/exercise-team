@@ -5,72 +5,96 @@ Window: 2025-12-10 to 2026-02-03
 ## Athlete
 - Sex: M
 - Weight: 80 kg
-- FTP: 290
-- FTP quality: medium
+- FTP: 190
+- FTP quality: low
+- HR max: unknown
+- HR max quality: unknown
+- LTHR: unknown
+- LTHR quality: unknown
 - Summit: no
 
 ## Run
 - Confidence: low
-- Weekly volume median: 6.4 km
-- Weekly sessions median: 0.8
-- Long session median: 4.2 km
-- Gap days: 1
-- Coverage (pace/speed): 1
-- Coverage (HR): 0.73
+- Weekly volume median: 0 km
+- Weekly sessions median: 0
+- Long session median: 0 km
+- Gap days: unknown
+- Coverage (pace/speed): 0
+- Coverage (HR): 0
+- Load points weekly median: 0
+- Load points weekly CV: 0
+- CTL end: 0
+- ATL end: 0
+- TSB end: 0
+- Load method coverage: power 0, pace 0, hr 0, assumed 0, assisted 0
 
-- Pace (weighted): 326.94 sec/km
-- Pace (median): 338.36 sec/km
-- Pace samples: 15
+- Pace (weighted): 0 sec/km
+- Pace (median): 0 sec/km
+- Pace samples: 0
 
 ## Bike
-- Confidence: medium
-- Weekly volume median: 7.35 hours
-- Weekly distance median: 201.7221 km
-- Weekly sessions median: 3
-- Long session median: 3.46 hours
-- Gap days: 1
+- Confidence: low
+- Weekly volume median: 0.1 hours
+- Weekly distance median: 0 km
+- Weekly sessions median: 0.1
+- Long session median: 0.1 hours
+- Gap days: 2
 - Coverage (pace/speed): 1
 - Coverage (HR): 0
-- Coverage (power): 1
-- Coverage (device watts): 0.19
+- Coverage (power): 0
+- Coverage (device watts): 0
+- Load points weekly median: 0
+- Load points weekly CV: 2.828
+- CTL end: 0.01
+- ATL end: 0.04
+- TSB end: -0.03
+- Load method coverage: power 0, pace 0, hr 0, assumed 1, assisted 0
 
-- Speed (weighted): 26.46 km/h
-- Speed (median): 26.84 km/h
-- Speed samples: 27
-- Weekly elevation median: 3094.28 m
-- Session elevation median: 743.48 m
-- Power (weighted): 173.5 W
-- Power (median): 183.1 W
-- Power samples: 27
-- Power (W/kg, weighted): 2.11
-- Power (W/kg, median): 2.2
-- Power (W/kg) samples: 27
-- FTP band: 261–319 W
-- FTP band (W/kg): 3.263–3.987
-- IF (weighted): 0.598
-- IF (median): 0.631
-- IF samples: 27
-- Load points weekly median: 2.96
+- Speed (weighted): 20 km/h
+- Speed (median): 20 km/h
+- Speed samples: 1
+- Weekly elevation median: 0 m
+- Session elevation median: 0 m
+- Power (weighted): 0 W
+- Power (median): 0 W
+- Power samples: 0
+- FTP band: 161.5–218.5 W
+- FTP band (W/kg): 2.019–2.731
+- Load points weekly median: 0
 
 ## Swim
 - Confidence: low
 - Weekly volume median: 0 km
 - Weekly sessions median: 0
 - Long session median: 0 km
-- Gap days: 47
-- Coverage (pace/speed): 1
+- Gap days: unknown
+- Coverage (pace/speed): 0
 - Coverage (HR): 0
+- Load points weekly median: 0
+- Load points weekly CV: 0
+- CTL end: 0
+- ATL end: 0
+- TSB end: 0
+- Load method coverage: power 0, pace 0, hr 0, assumed 0, assisted 0
 
-- Pace (weighted): 132.83 sec/100m
-- Pace (median): 129.15 sec/100m
-- Pace samples: 56
+- Pace (weighted): 0 sec/100m
+- Pace (median): 0 sec/100m
+- Pace samples: 0
 
 ## Composite
-- Total endurance hours (median): 8.85
-- Total sessions (median): 5
-- Aerobic points (median): 9.13
-- Run time share (median): 0.078
-- Flag high_cardio_low_impact: yes
+- Total endurance hours (median): 0
+- Total sessions (median): 0
+- Aerobic points (median): 0
+- Run time share (median): 0
+- Flag high_cardio_low_impact: no
+
+## Data Quality
+- Streams fetch attempted: yes
+- Streams fetched: 0
+- Streams cache hit rate: 1
+- Activity details attempted: no
+- Activity details fetched: 0
+- Stopped early reason: none
 
 ## Premium Features
 - Summit: no
@@ -82,15 +106,14 @@ Window: 2025-12-10 to 2026-02-03
 - Segment efforts count: 0
 
 ## Restart Caps
-- Gap days any: 1
+- Gap days any: 2
 - Reentry level: 0
-- run week1 cap: 5.44 (km), long 3.57
-- run week2 cap: 6.4 (km), long 4.11
-- bike week1 cap: 7.35 (hours), long 3.46
-- bike week2 cap: 7.35 (hours), long 3.46
+- run week1 cap: 0 (km), long 0
+- run week2 cap: 0 (km), long 0
+- bike week1 cap: 0.09 (hours), long 0.09
+- bike week2 cap: 0.1 (hours), long 0.1
 - swim week1 cap: 0 (km), long 0
 - swim week2 cap: 0 (km), long 0
 
 ## Transfer
-- Run easy pace range: 355.3–423 sec/km
-- Run intro weekly time: 45–90 min
+- Run easy pace range: unavailable (insufficient_run_pace_samples)

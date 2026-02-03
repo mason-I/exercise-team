@@ -1,0 +1,18 @@
+{
+  "preferences": {
+    "rest_day": "sunday"
+  },
+  "goal": {
+    "event": {
+      "distances": {
+        "swim_km": 3.8,
+        "bike_km": 180,
+        "run_km": 42.2
+      }
+    }
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  }
+}

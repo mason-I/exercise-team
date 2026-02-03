@@ -13,8 +13,9 @@ This repo implements the PRD in `PRD.md` using Claude Code project assets:
 2. Fetch Strava activities to `data/strava_activities.json` via MCP.
 3. Compute baseline: `/compute-baseline 56`
 4. Set goal: `/set-goal 2026-10-10 half`
-5. Build a week: `/build-week 2026-01-26`
-6. Analyze adherence after the week: `/analyze-strava 2026-01-26`
+5. Analyze goal/load targets: `/analyze-goal`
+6. Build a week: `/build-week 2026-01-26`
+7. Analyze adherence after the week: `/analyze-strava 2026-01-26`
 
 ## Data format for `data/strava_activities.json`
 
@@ -42,6 +43,7 @@ Accepted fields:
 
 - `.claude/skills/compute-baseline/scripts/compute_baseline.js` -> `baseline.json` + `baseline.md`
 - `.claude/skills/set-goal/scripts/set_goal.js` -> `calendar.json`
+- `.claude/skills/analyze-goal/scripts/analyze_goal.js` -> `goal_analysis.json`
 - `.claude/skills/build-week/scripts/build_week.js` -> `plans/YYYY-MM-DD.json` + `.md`
 - `.claude/skills/analyze-strava/scripts/analyze_strava.js` -> `reports/YYYY-MM-DD-week.md`
 - `.claude/skills/validate-artifacts/scripts/validate_artifacts.js` -> schema and safety checks

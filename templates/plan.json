@@ -5,24 +5,48 @@
     "run": {
       "sessions": 0,
       "volume_km": 0,
-      "long_km": 0
+      "long_km": 0,
+      "volume_min": null,
+      "long_min": null,
+      "load_points": 0
     },
     "bike": {
       "sessions": 0,
       "volume_hours": 0,
-      "long_hours": 0
+      "long_hours": 0,
+      "load_points": 0
     },
     "swim": {
       "sessions": 0,
       "volume_km": 0,
-      "long_km": 0
+      "long_km": 0,
+      "volume_min": null,
+      "long_min": null,
+      "load_points": 0
     }
   },
   "nutrition": {
     "daily_calories_target": 0,
     "notes": ""
   },
-  "sessions": [],
+  "sessions": [
+    {
+      "date": "",
+      "discipline": "run",
+      "type": "easy",
+      "distance_km": 0,
+      "distance_km_cap": null,
+      "duration_min": 0,
+      "intensity": {
+        "target_if_range": null,
+        "target_power_w_range": null,
+        "pace_sec_per_km_range": null,
+        "pace_sec_per_100m_range": null,
+        "zone_hint": null,
+        "effort_hint": null
+      }
+    }
+  ],
   "notes": [],
   "flags": []
 }

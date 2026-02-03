@@ -45,15 +45,17 @@ When generating or updating a weekly plan, **always delegate** to:
 ## Planning Workflow
 1. **Baseline**: Run `/compute-baseline` if no baseline exists or data is stale.
 2. **Goal**: Run `/set-goal` to populate `calendar.json`.
-3. **Build**: Run `/build-week` for the requested week.
-4. **Adjust** (optional): Use `/adjust-week` for constraints or missed sessions.
-5. **Analyze**: Use `/analyze-strava` after the week to generate adherence report.
+3. **Analyze goal**: Run `/analyze-goal` to compute load targets and ramp rules.
+4. **Build**: Run `/build-week` for the requested week.
+5. **Adjust** (optional): Use `/adjust-week` for constraints or missed sessions.
+6. **Analyze**: Use `/analyze-strava` after the week to generate adherence report.
 
 ## Safety Rules
 - Week 1 volume must not exceed baseline medians unless explicitly overridden.
 - Long sessions must stay within tolerance; reduce further for low confidence.
 - Avoid stacking two hard sessions (bike/run) on consecutive days.
 - If any discipline has **low confidence**, lower intensity and emphasize consistency.
+- Apply load ramp limits week-over-week (run 5–10%, bike 10%, swim 15%) when prior plans exist.
 
 ## Output Expectations
 When responding to the user:

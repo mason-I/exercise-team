@@ -431,6 +431,13 @@ function normalizeActivities(raw) {
       if (!startDateLocal || distance == null || movingTime == null || !sportType) return null;
 
       const averageSpeed = activity.average_speed != null ? Number(activity.average_speed) : null;
+      const weightedAverageWatts =
+        activity.weighted_average_watts != null ? Number(activity.weighted_average_watts) : null;
+      const deviceWatts = activity.device_watts != null ? Boolean(activity.device_watts) : null;
+      const kilojoules = activity.kilojoules != null ? Number(activity.kilojoules) : null;
+      const maxHeartrate = activity.max_heartrate != null ? Number(activity.max_heartrate) : null;
+      const gradeAdjustedSpeed =
+        activity.average_grade_adjusted_speed != null ? Number(activity.average_grade_adjusted_speed) : null;
       const pacePerKm = distance && movingTime ? movingTime / (distance / 1000) : null;
       const pacePer100m = distance && movingTime ? movingTime / (distance / 100) : null;
 
@@ -439,6 +446,7 @@ function normalizeActivities(raw) {
         name: activity.name ?? null,
         start_date_local: startDateLocal,
         sport_type: sportType,
+        type: activity.type ?? null,
         distance_m: distance,
         moving_time_sec: movingTime,
         elapsed_time_sec: activity.elapsed_time != null ? Number(activity.elapsed_time) : null,
@@ -447,7 +455,14 @@ function normalizeActivities(raw) {
         average_speed_mps: averageSpeed,
         average_speed_kmh: averageSpeed != null ? Number((averageSpeed * 3.6).toFixed(2)) : null,
         average_watts: activity.average_watts != null ? Number(activity.average_watts) : null,
+        weighted_average_watts: weightedAverageWatts,
+        device_watts: deviceWatts,
+        kilojoules,
         average_heartrate: activity.average_heartrate != null ? Number(activity.average_heartrate) : null,
+        max_heartrate: maxHeartrate,
+        average_grade_adjusted_speed: gradeAdjustedSpeed,
+        commute: activity.commute != null ? Boolean(activity.commute) : null,
+        trainer: activity.trainer != null ? Boolean(activity.trainer) : null,
         pace_sec_per_km: pacePerKm != null ? Number(pacePerKm.toFixed(2)) : null,
         pace_sec_per_100m: pacePer100m != null ? Number(pacePer100m.toFixed(2)) : null,
       };

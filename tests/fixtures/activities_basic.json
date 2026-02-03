@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "sport_type": "Run",
+    "start_date_local": "2026-02-01T07:00:00Z",
+    "distance": 5000,
+    "moving_time": 1500,
+    "average_speed": 3.33,
+    "average_heartrate": 150,
+    "max_heartrate": 175
+  },
+  {
+    "id": 2,
+    "sport_type": "Ride",
+    "start_date_local": "2026-02-02T07:00:00Z",
+    "distance": 20000,
+    "moving_time": 3600,
+    "average_speed": 5.55,
+    "average_watts": 180,
+    "average_heartrate": 140,
+    "max_heartrate": 165
+  },
+  {
+    "id": 3,
+    "sport_type": "Swim",
+    "start_date_local": "2026-02-03T07:00:00Z",
+    "distance": 1000,
+    "moving_time": 1800
+  },
+  {
+    "id": 4,
+    "sport_type": "Run",
+    "start_date_local": "2026-01-25T07:00:00Z",
+    "distance": 4000,
+    "moving_time": 1400,
+    "average_speed": 2.85,
+    "average_heartrate": 148,
+    "max_heartrate": 170
+  },
+  {
+    "id": 5,
+    "sport_type": "Ride",
+    "start_date_local": "2026-01-26T07:00:00Z",
+    "distance": 15000,
+    "moving_time": 3000,
+    "average_watts": 170,
+    "average_speed": 5,
+    "average_heartrate": 138,
+    "max_heartrate": 162
+  },
+  {
+    "id": 6,
+    "sport_type": "Swim",
+    "start_date_local": "2026-01-27T07:00:00Z",
+    "distance": 800,
+    "moving_time": 1600
+  }
+]

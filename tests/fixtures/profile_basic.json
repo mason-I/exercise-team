@@ -1,0 +1,11 @@
+{
+  "goal": {
+    "event": {
+      "distances": {
+        "swim_km": 3.8,
+        "bike_km": 180,
+        "run_km": 42.2
+      }
+    }
+  }
+}

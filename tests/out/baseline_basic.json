@@ -1,0 +1,711 @@
+{
+  "generated_at": "2026-02-03",
+  "windows": {
+    "short_days": 14,
+    "primary_days": 56,
+    "long_days": 112,
+    "all_start": "2026-01-25",
+    "all_end": "2026-02-03",
+    "primary_start": "2025-12-10",
+    "primary_end": "2026-02-03"
+  },
+  "weighting": {
+    "mode": "recent_weighted",
+    "recent_window_days": 56,
+    "note": "Recent 56 days weighted more heavily; historical data retained to avoid false zero baselines."
+  },
+  "athlete_meta": {
+    "sex": "M",
+    "weight_kg": 70,
+    "has_weight": true,
+    "ftp_w": 250,
+    "ftp_source": "strava_athlete",
+    "ftp_quality": "medium",
+    "hr_max_bpm": 170,
+    "hr_max_source": "summary_max_heartrate",
+    "hr_max_quality": "medium",
+    "hr_lthr_bpm": 153,
+    "hr_lthr_source": "derived_hrmax",
+    "hr_lthr_quality": "low",
+    "summit": false,
+    "source": "strava_athlete"
+  },
+  "load_model": {
+    "ewma_tau_days": {
+      "ctl": 42,
+      "atl": 7
+    },
+    "if_clamp": {
+      "bike": [
+        0.3,
+        1.3
+      ],
+      "run": [
+        0.5,
+        1.3
+      ],
+      "swim": [
+        0.5,
+        1.3
+      ],
+      "hr": [
+        0.6,
+        1.2
+      ]
+    },
+    "default_if": {
+      "bike": 0.65,
+      "bike_commute": 0.55,
+      "run": 0.7,
+      "swim": 0.65
+    },
+    "method_priority": {
+      "bike": [
+        "power",
+        "hr",
+        "assumed"
+      ],
+      "run": [
+        "pace",
+        "hr",
+        "assumed"
+      ],
+      "swim": [
+        "pace",
+        "assumed"
+      ]
+    }
+  },
+  "data_quality": {
+    "streams_fetch_attempted": false,
+    "streams_fetched_count": 0,
+    "streams_cache_hit_rate": 0,
+    "activity_details_fetch_attempted": false,
+    "activity_details_fetched_count": 0,
+    "stopped_early_reason": null
+  },
+  "premium_features": {
+    "summit": false,
+    "activity_zones": {
+      "attempted": false,
+      "available": false,
+      "fetched_count": 0
+    },
+    "segment_efforts": {
+      "attempted": false,
+      "fetched_count": 0,
+      "effort_count": 0
+    }
+  },
+  "disciplines": {
+    "run": {
+      "units": {
+        "volume": "km",
+        "session_distance": "km",
+        "session_duration": "min",
+        "long_session": "km"
+      },
+      "weekly": {
+        "sessions_median": 0.2,
+        "volume_median": 0.8,
+        "volume_iqr": [
+          0,
+          1
+        ],
+        "zero_weeks": 7,
+        "volume_cv": 1.886,
+        "weeks_tracked": 9,
+        "elevation_gain_median": 0,
+        "distance_km_median": 0,
+        "distance_km_iqr": [
+          0,
+          0
+        ]
+      },
+      "session": {
+        "distance_median": 4.5,
+        "duration_median_min": 24.17,
+        "sessions_tracked": 2,
+        "elevation_gain_median_m": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0.8
+      },
+      "intensity": {
+        "pace": {
+          "distance_weighted_sec_per_km": 322.22,
+          "median_sec_per_km": 325,
+          "sample_count": 2
+        },
+        "heart_rate": {
+          "duration_weighted_bpm": 149,
+          "median_bpm": 149,
+          "sample_count": 2
+        }
+      },
+      "coverage": {
+        "total_activities": 2,
+        "pace_or_speed_coverage_fraction": 1,
+        "hr_fraction": 1
+      },
+      "confidence": "low",
+      "history": {
+        "gap_days": 2,
+        "recent": {
+          "weekly": {
+            "sessions_median": 0,
+            "volume_median": 0,
+            "volume_iqr": [
+              0,
+              0
+            ],
+            "zero_weeks": 7,
+            "volume_cv": 1.886,
+            "weeks_tracked": 9,
+            "elevation_gain_median": 0,
+            "distance_km_median": 0,
+            "distance_km_iqr": [
+              0,
+              0
+            ]
+          },
+          "session": {
+            "distance_median": 4.5,
+            "duration_median_min": 24.166666666666664,
+            "sessions_tracked": 2,
+            "elevation_gain_median_m": 0
+          },
+          "long_session": {
+            "weekly_max_median": 0
+          },
+          "intensity": {
+            "pace": {
+              "distance_weighted_sec_per_km": 322.22,
+              "median_sec_per_km": 325,
+              "sample_count": 2
+            },
+            "heart_rate": {
+              "duration_weighted_bpm": 149,
+              "median_bpm": 149,
+              "sample_count": 2
+            }
+          }
+        },
+        "historical": {
+          "weekly": {
+            "sessions_median": 1,
+            "volume_median": 4,
+            "volume_iqr": [
+              0,
+              5
+            ],
+            "zero_weeks": 1,
+            "volume_cv": 0.72,
+            "weeks_tracked": 3,
+            "elevation_gain_median": 0,
+            "distance_km_median": 0,
+            "distance_km_iqr": [
+              0,
+              0
+            ]
+          },
+          "session": {
+            "distance_median": 4.5,
+            "duration_median_min": 24.166666666666664,
+            "sessions_tracked": 2,
+            "elevation_gain_median_m": 0
+          },
+          "long_session": {
+            "weekly_max_median": 4
+          },
+          "intensity": {
+            "pace": {
+              "distance_weighted_sec_per_km": 322.22,
+              "median_sec_per_km": 325,
+              "sample_count": 2
+            },
+            "heart_rate": {
+              "duration_weighted_bpm": 149,
+              "median_bpm": 149,
+              "sample_count": 2
+            }
+          }
+        }
+      },
+      "gap_days_discipline": 2,
+      "pace": {
+        "distance_weighted_sec_per_km": 322.22,
+        "median_sec_per_km": 325,
+        "sample_count": 2
+      },
+      "threshold": {
+        "vthr_mps": 2.85,
+        "source": "p90_speed",
+        "quality": "low"
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 1.913,
+        "weeks_tracked": 9,
+        "ctl_end": 0.02,
+        "atl_end": 0.07,
+        "tsb_end": -0.05,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 1,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
+      }
+    },
+    "bike": {
+      "units": {
+        "volume": "hours",
+        "session_distance": "km",
+        "session_duration": "min",
+        "long_session": "hours",
+        "elevation_gain": "m"
+      },
+      "weekly": {
+        "sessions_median": 0.2,
+        "volume_median": 0.17,
+        "volume_iqr": [
+          0,
+          0.2
+        ],
+        "zero_weeks": 7,
+        "volume_cv": 1.881,
+        "weeks_tracked": 9,
+        "elevation_gain_median": 0,
+        "distance_km_median": 0,
+        "distance_km_iqr": [
+          0,
+          0
+        ]
+      },
+      "session": {
+        "distance_median": 17.5,
+        "duration_median_min": 55,
+        "sessions_tracked": 2,
+        "elevation_gain_median_m": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0.17
+      },
+      "intensity": {
+        "speed": {
+          "distance_weighted_kmh": 19.14,
+          "median_kmh": 19,
+          "sample_count": 2
+        },
+        "power": {
+          "duration_weighted_watts": 175.5,
+          "median_watts": 175,
+          "sample_count": 2
+        },
+        "power_wkg": {
+          "duration_weighted_wkg": 2.51,
+          "median_wkg": 2.5,
+          "sample_count": 2
+        },
+        "heart_rate": {
+          "duration_weighted_bpm": 139.1,
+          "median_bpm": 139,
+          "sample_count": 2
+        },
+        "if": {
+          "duration_weighted_if": 0.702,
+          "median_if": 0.7,
+          "sample_count": 2
+        }
+      },
+      "coverage": {
+        "total_activities": 2,
+        "pace_or_speed_coverage_fraction": 1,
+        "hr_fraction": 1,
+        "power_fraction": 1,
+        "device_watts_fraction": 0
+      },
+      "confidence": "low",
+      "history": {
+        "gap_days": 1,
+        "recent": {
+          "weekly": {
+            "sessions_median": 0,
+            "volume_median": 0,
+            "volume_iqr": [
+              0,
+              0
+            ],
+            "zero_weeks": 7,
+            "volume_cv": 1.881,
+            "weeks_tracked": 9,
+            "elevation_gain_median": 0,
+            "distance_km_median": 0,
+            "distance_km_iqr": [
+              0,
+              0
+            ]
+          },
+          "session": {
+            "distance_median": 17.5,
+            "duration_median_min": 55,
+            "sessions_tracked": 2,
+            "elevation_gain_median_m": 0
+          },
+          "long_session": {
+            "weekly_max_median": 0
+          },
+          "intensity": {
+            "speed": {
+              "distance_weighted_kmh": 19.14,
+              "median_kmh": 19,
+              "sample_count": 2
+            },
+            "power": {
+              "duration_weighted_watts": 175.5,
+              "median_watts": 175,
+              "sample_count": 2
+            },
+            "power_wkg": {
+              "duration_weighted_wkg": 2.506,
+              "median_wkg": 2.5,
+              "sample_count": 2
+            },
+            "heart_rate": {
+              "duration_weighted_bpm": 139.1,
+              "median_bpm": 139,
+              "sample_count": 2
+            }
+          }
+        },
+        "historical": {
+          "weekly": {
+            "sessions_median": 1,
+            "volume_median": 0.8333333333333334,
+            "volume_iqr": [
+              0,
+              1
+            ],
+            "zero_weeks": 1,
+            "volume_cv": 0.716,
+            "weeks_tracked": 3,
+            "elevation_gain_median": 0,
+            "distance_km_median": 15,
+            "distance_km_iqr": [
+              0,
+              20
+            ]
+          },
+          "session": {
+            "distance_median": 17.5,
+            "duration_median_min": 55,
+            "sessions_tracked": 2,
+            "elevation_gain_median_m": 0
+          },
+          "long_session": {
+            "weekly_max_median": 0.8333333333333334
+          },
+          "intensity": {
+            "speed": {
+              "distance_weighted_kmh": 19.14,
+              "median_kmh": 19,
+              "sample_count": 2
+            },
+            "power": {
+              "duration_weighted_watts": 175.5,
+              "median_watts": 175,
+              "sample_count": 2
+            },
+            "power_wkg": {
+              "duration_weighted_wkg": 2.506,
+              "median_wkg": 2.5,
+              "sample_count": 2
+            },
+            "heart_rate": {
+              "duration_weighted_bpm": 139.1,
+              "median_bpm": 139,
+              "sample_count": 2
+            }
+          }
+        }
+      },
+      "gap_days_discipline": 1,
+      "speed": {
+        "distance_weighted_kmh": 19.14,
+        "median_kmh": 19,
+        "sample_count": 2
+      },
+      "power": {
+        "duration_weighted_watts": 175.5,
+        "median_watts": 175,
+        "sample_count": 2
+      },
+      "power_wkg": {
+        "duration_weighted_wkg": 2.51,
+        "median_wkg": 2.5,
+        "sample_count": 2
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 1.897,
+        "weeks_tracked": 9,
+        "ctl_end": 0.02,
+        "atl_end": 0.08,
+        "tsb_end": -0.06,
+        "method_coverage": {
+          "hours_power": 1,
+          "hours_pace": 0,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
+      },
+      "threshold": {
+        "ftp_w_band": [
+          225,
+          275
+        ],
+        "ftp_wkg_band": [
+          3.214,
+          3.929
+        ],
+        "quality": "medium"
+      }
+    },
+    "swim": {
+      "units": {
+        "volume": "km",
+        "session_distance": "km",
+        "session_duration": "min",
+        "long_session": "km"
+      },
+      "weekly": {
+        "sessions_median": 0.2,
+        "volume_median": 0.16,
+        "volume_iqr": [
+          0,
+          0.2
+        ],
+        "zero_weeks": 7,
+        "volume_cv": 1.886,
+        "weeks_tracked": 9,
+        "elevation_gain_median": 0,
+        "distance_km_median": 0,
+        "distance_km_iqr": [
+          0,
+          0
+        ]
+      },
+      "session": {
+        "distance_median": 0.9,
+        "duration_median_min": 28.33,
+        "sessions_tracked": 2,
+        "elevation_gain_median_m": 0
+      },
+      "long_session": {
+        "weekly_max_median": 0.16
+      },
+      "intensity": {},
+      "coverage": {
+        "total_activities": 2,
+        "pace_or_speed_coverage_fraction": 1,
+        "hr_fraction": 0
+      },
+      "confidence": "low",
+      "history": {
+        "gap_days": 0,
+        "recent": {
+          "weekly": {
+            "sessions_median": 0,
+            "volume_median": 0,
+            "volume_iqr": [
+              0,
+              0
+            ],
+            "zero_weeks": 7,
+            "volume_cv": 1.886,
+            "weeks_tracked": 9,
+            "elevation_gain_median": 0,
+            "distance_km_median": 0,
+            "distance_km_iqr": [
+              0,
+              0
+            ]
+          },
+          "session": {
+            "distance_median": 0.9,
+            "duration_median_min": 28.333333333333336,
+            "sessions_tracked": 2,
+            "elevation_gain_median_m": 0
+          },
+          "long_session": {
+            "weekly_max_median": 0
+          },
+          "intensity": {}
+        },
+        "historical": {
+          "weekly": {
+            "sessions_median": 1,
+            "volume_median": 0.8,
+            "volume_iqr": [
+              0,
+              1
+            ],
+            "zero_weeks": 1,
+            "volume_cv": 0.72,
+            "weeks_tracked": 3,
+            "elevation_gain_median": 0,
+            "distance_km_median": 0,
+            "distance_km_iqr": [
+              0,
+              0
+            ]
+          },
+          "session": {
+            "distance_median": 0.9,
+            "duration_median_min": 28.333333333333336,
+            "sessions_tracked": 2,
+            "elevation_gain_median_m": 0
+          },
+          "long_session": {
+            "weekly_max_median": 0.8
+          },
+          "intensity": {}
+        }
+      },
+      "gap_days_discipline": 0,
+      "pace": {
+        "distance_weighted_sec_per_100m": 188.89,
+        "median_sec_per_100m": 190,
+        "sample_count": 2
+      },
+      "threshold": {
+        "css_sec_per_100m": 180,
+        "source": "p20_pace",
+        "quality": "low"
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 1.902,
+        "weeks_tracked": 9,
+        "ctl_end": 0.02,
+        "atl_end": 0.09,
+        "tsb_end": -0.07,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 1,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
+      }
+    }
+  },
+  "context": {
+    "short_window": {
+      "start": "2026-01-21",
+      "end": "2026-02-03",
+      "activity_count": 6
+    },
+    "long_window": {
+      "start": "2025-10-15",
+      "end": "2026-02-03",
+      "activity_count": 6
+    }
+  },
+  "composite": {
+    "weekly": {
+      "total_endurance_hours_median": 0,
+      "total_endurance_hours_iqr": [
+        0,
+        0.3888888888888889
+      ],
+      "total_endurance_hours_cv": 1.642,
+      "total_sessions_median": 0,
+      "total_sessions_iqr": [
+        0,
+        1
+      ],
+      "total_sessions_cv": 1.581,
+      "aerobic_points_median": 0,
+      "aerobic_points_iqr": [
+        0,
+        0.33531746031746035
+      ],
+      "aerobic_points_cv": 1.669
+    },
+    "by_sport": {
+      "weekly_aerobic_points_median": {
+        "run": 0,
+        "bike": 0,
+        "swim": 0
+      }
+    },
+    "impact": {
+      "weekly_run_km_median": 0,
+      "weekly_run_hours_median": 0,
+      "run_time_share_median": 0
+    },
+    "flags": {
+      "high_cardio_low_impact": false
+    }
+  },
+  "restart": {
+    "gap_days_any": 0,
+    "reentry_level": 0,
+    "week1": {
+      "run": {
+        "volume_cap": 0.68,
+        "long_cap": 0.68
+      },
+      "bike": {
+        "volume_cap": 0.14,
+        "long_cap": 0.14
+      },
+      "swim": {
+        "volume_cap": 0.14,
+        "long_cap": 0.14
+      }
+    },
+    "week2": {
+      "run": {
+        "volume_cap": 0.8,
+        "long_cap": 0.78
+      },
+      "bike": {
+        "volume_cap": 0.17,
+        "long_cap": 0.17
+      },
+      "swim": {
+        "volume_cap": 0.16,
+        "long_cap": 0.16
+      }
+    }
+  },
+  "transfer": {
+    "run_easy_pace_sec_per_km_range": [
+      357.5,
+      438.8
+    ],
+    "run_easy_pace_reason": "low_confidence",
+    "run_intro_weekly_time_min_range": null,
+    "transfer_confidence": null
+  }
+}

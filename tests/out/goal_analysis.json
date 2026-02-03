@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-02-03",
+  "race": {
+    "date": "2026-10-10",
+    "race_type": "full",
+    "distances": {
+      "swim_km": 3.8,
+      "bike_km": 180,
+      "run_km": 42.2
+    }
+  },
+  "baseline_snapshot": {
+    "run_weekly_km": 0.8,
+    "bike_weekly_hours": 0.17,
+    "swim_weekly_km": 0.16,
+    "run_long_km": 0.8,
+    "bike_long_hours": 0.17,
+    "swim_long_km": 0.16,
+    "flags": {
+      "high_cardio_low_impact": false
+    }
+  },
+  "current_state": {
+    "by_sport": {
+      "run": {
+        "weekly_load_points_median": 0,
+        "ctl_end": 0.02,
+        "atl_end": 0.07,
+        "tsb_end": -0.05,
+        "confidence": "low",
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 1,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        }
+      },
+      "bike": {
+        "weekly_load_points_median": 0,
+        "ctl_end": 0.02,
+        "atl_end": 0.08,
+        "tsb_end": -0.06,
+        "confidence": "low",
+        "method_coverage": {
+          "hours_power": 1,
+          "hours_pace": 0,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        }
+      },
+      "swim": {
+        "weekly_load_points_median": 0,
+        "ctl_end": 0.02,
+        "atl_end": 0.09,
+        "tsb_end": -0.07,
+        "confidence": "low",
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 1,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        }
+      }
+    },
+    "overall": {
+      "weekly_load_points_median": 0,
+      "ctl_end": 0.06,
+      "atl_end": 0.24,
+      "tsb_end": -0.18
+    }
+  },
+  "targets": {
+    "total_load_points_peak": 0,
+    "bike_load_points_peak": 0,
+    "run_load_points_peak": 0,
+    "swim_load_points_peak": 0,
+    "total_endurance_hours_peak": 0
+  },
+  "ramp_rules": {
+    "run": 0.05,
+    "bike": 0.1,
+    "swim": 0.15
+  },
+  "thresholds_used": {
+    "ftp_w": 250,
+    "ftp_quality": "medium",
+    "vthr_mps": 2.85,
+    "vthr_quality": "low",
+    "lthr_bpm": 153,
+    "lthr_quality": "low",
+    "css_sec_per_100m": 180,
+    "css_quality": "low"
+  }
+}
