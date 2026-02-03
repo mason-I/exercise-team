@@ -1,4 +1,6 @@
 const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const {
   coefficientOfVariation,
   daterangeWeeks,
@@ -13,6 +15,27 @@ const {
 } = require("../../_shared/lib");
 
 const DISCIPLINES = { run: "Run", bike: "Ride", swim: "Swim" };
+
+const LOAD_MODEL = {
+  ewma_tau_days: { ctl: 42, atl: 7 },
+  if_clamp: {
+    bike: [0.3, 1.3],
+    run: [0.5, 1.3],
+    swim: [0.5, 1.3],
+    hr: [0.6, 1.2],
+  },
+  default_if: {
+    bike: 0.65,
+    bike_commute: 0.55,
+    run: 0.7,
+    swim: 0.65,
+  },
+  method_priority: {
+    bike: ["power", "hr", "assumed"],
+    run: ["pace", "hr", "assumed"],
+    swim: ["pace", "assumed"],
+  },
+};
 
 function normalizeSport(value) {
   if (!value) return null;
@@ -38,6 +61,95 @@ function normalizeSport(value) {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function percentile(values, pct) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.floor((pct / 100) * (sorted.length - 1))));
+  return sorted[idx];
+}
+
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function readJsonFile(filePath) {
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function writeJsonFile(filePath, data) {
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function mapFromArray(array) {
+  const map = {};
+  for (const item of array || []) {
+    if (item && item.type) map[item.type] = item;
+  }
+  return map;
+}
+
+function toDataArray(stream) {
+  if (!stream) return null;
+  if (Array.isArray(stream)) return stream;
+  if (Array.isArray(stream.data)) return stream.data;
+  return null;
+}
+
+function maxRollingAverage(time, values, windowSec) {
+  if (!time || !values || time.length !== values.length || time.length < 2) return null;
+  let maxAvg = null;
+  let sum = 0;
+  let start = 0;
+  for (let i = 0; i < values.length; i += 1) {
+    const v = Number(values[i]);
+    if (!Number.isFinite(v)) continue;
+    sum += v;
+    while (time[i] - time[start] > windowSec) {
+      sum -= Number(values[start]) || 0;
+      start += 1;
+    }
+    const windowDuration = time[i] - time[start];
+    if (windowDuration >= windowSec && i >= start) {
+      const count = i - start + 1;
+      const avg = count ? sum / count : 0;
+      if (!maxAvg || avg > maxAvg) maxAvg = avg;
+    }
+  }
+  return maxAvg;
+}
+
+function normalizedPower(time, watts) {
+  if (!time || !watts || time.length < 2) return null;
+  const windowSec = 30;
+  const rolling = [];
+  let sum = 0;
+  let start = 0;
+  for (let i = 0; i < watts.length; i += 1) {
+    const v = Number(watts[i]);
+    if (!Number.isFinite(v)) continue;
+    sum += v;
+    while (time[i] - time[start] > windowSec) {
+      sum -= Number(watts[start]) || 0;
+      start += 1;
+    }
+    const windowDuration = time[i] - time[start];
+    if (windowDuration >= windowSec) {
+      const count = i - start + 1;
+      const avg = count ? sum / count : 0;
+      rolling.push(avg);
+    }
+  }
+  if (!rolling.length) return null;
+  const meanPow4 = rolling.reduce((acc, val) => acc + Math.pow(val, 4), 0) / rolling.length;
+  return Math.pow(meanPow4, 0.25);
 }
 
 function fileExists(path) {
@@ -90,6 +202,22 @@ function activitySpeedKmh(activity) {
   return (distM / 1000) / (durSec / 3600);
 }
 
+function activityGradeAdjustedSpeedMps(activity) {
+  if ("average_grade_adjusted_speed" in activity && activity.average_grade_adjusted_speed != null) {
+    return Number(activity.average_grade_adjusted_speed);
+  }
+  if ("average_speed_mps" in activity && activity.average_speed_mps != null) {
+    return Number(activity.average_speed_mps);
+  }
+  if ("average_speed" in activity && activity.average_speed != null) {
+    return Number(activity.average_speed);
+  }
+  const distM = activityDistanceM(activity);
+  const durSec = activityDurationSec(activity);
+  if (!distM || !durSec) return null;
+  return distM / durSec;
+}
+
 function activityPaceSecPerKm(activity) {
   if ("pace_sec_per_km" in activity && activity.pace_sec_per_km != null) return Number(activity.pace_sec_per_km);
   const distM = activityDistanceM(activity);
@@ -116,9 +244,41 @@ function activityAverageWatts(activity) {
   return null;
 }
 
+function activityWeightedAverageWatts(activity) {
+  if ("weighted_average_watts" in activity && activity.weighted_average_watts != null) {
+    return Number(activity.weighted_average_watts);
+  }
+  return null;
+}
+
 function activityAverageHeartRate(activity) {
   if ("average_heartrate" in activity && activity.average_heartrate != null) return Number(activity.average_heartrate);
   return null;
+}
+
+function activityMaxHeartRate(activity) {
+  if ("max_heartrate" in activity && activity.max_heartrate != null) return Number(activity.max_heartrate);
+  return null;
+}
+
+function activityIsCommute(activity) {
+  if ("commute" in activity && activity.commute != null) return Boolean(activity.commute);
+  return false;
+}
+
+function activityIsAssistedRide(activity) {
+  const type = (activity.sport_type || activity.type || "").toLowerCase();
+  return type === "ebikeride" || type === "ebike";
+}
+
+function activityNeedsDetails(activity) {
+  if (!activity) return false;
+  const missingPower = activityAverageWatts(activity) == null && activityWeightedAverageWatts(activity) == null;
+  const missingHr = activityAverageHeartRate(activity) == null && activityMaxHeartRate(activity) == null;
+  const discipline = normalizeSport(activity.sport_type || activity.type);
+  const missingGradeSpeed =
+    discipline === "run" && activityGradeAdjustedSpeedMps(activity) == null && activitySpeedKmh(activity) == null;
+  return missingPower || missingHr || missingGradeSpeed;
 }
 
 function activityDeviceWatts(activity) {
@@ -569,6 +729,11 @@ function parseArgs() {
     activityZonesLimit: 60,
     fetchSegmentEfforts: "auto",
     segmentEffortsLimit: 8,
+    fetchStreams: "auto",
+    streamsLimit: 25,
+    streamsCacheDir: "~/.cache/coaching-team/strava",
+    fetchActivityDetails: "auto",
+    activityDetailsLimit: 25,
     windowDays: 56,
     shortWindow: 14,
     longWindow: 112,
@@ -586,6 +751,11 @@ function parseArgs() {
     if (arg === "--activity-zones-limit") options.activityZonesLimit = Number(args[i + 1]);
     if (arg === "--fetch-segment-efforts") options.fetchSegmentEfforts = args[i + 1];
     if (arg === "--segment-efforts-limit") options.segmentEffortsLimit = Number(args[i + 1]);
+    if (arg === "--fetch-streams") options.fetchStreams = args[i + 1];
+    if (arg === "--streams-limit") options.streamsLimit = Number(args[i + 1]);
+    if (arg === "--streams-cache-dir") options.streamsCacheDir = args[i + 1];
+    if (arg === "--fetch-activity-details") options.fetchActivityDetails = args[i + 1];
+    if (arg === "--activity-details-limit") options.activityDetailsLimit = Number(args[i + 1]);
     if (arg === "--window-days") options.windowDays = Number(args[i + 1]);
     if (arg === "--short-window") options.shortWindow = Number(args[i + 1]);
     if (arg === "--long-window") options.longWindow = Number(args[i + 1]);
@@ -640,6 +810,12 @@ function loadAthleteMeta(options) {
     ftp_w: ftpWatts,
     ftp_source: ftpWatts ? source : null,
     ftp_quality: "unknown",
+    hr_max_bpm: null,
+    hr_max_source: null,
+    hr_max_quality: "unknown",
+    hr_lthr_bpm: null,
+    hr_lthr_source: null,
+    hr_lthr_quality: "unknown",
     summit: summit === null ? false : Boolean(summit),
     source,
   };
@@ -694,6 +870,18 @@ function shouldFetchSegmentEfforts(mode, summit) {
   return Boolean(summit);
 }
 
+function shouldFetchStreams(mode) {
+  if (mode === "true") return true;
+  if (mode === "false") return false;
+  return true;
+}
+
+function shouldFetchActivityDetails(mode) {
+  if (mode === "true") return true;
+  if (mode === "false") return false;
+  return true;
+}
+
 function parseRateLimit(headers) {
   const limitHeader = headers.get("x-ratelimit-limit");
   const usageHeader = headers.get("x-ratelimit-usage");
@@ -702,6 +890,142 @@ function parseRateLimit(headers) {
   const usage = usageHeader.split(",").map((v) => Number(v));
   if (!limits.length || !usage.length) return null;
   return { limits, usage };
+}
+
+function resolveCacheDir(dirPath) {
+  if (dirPath) return resolveHome(dirPath);
+  return path.join(os.homedir(), ".cache", "coaching-team", "strava");
+}
+
+function shouldStopForRateLimit(headers) {
+  const info = parseRateLimit(headers);
+  if (!info) return false;
+  for (let i = 0; i < info.limits.length; i += 1) {
+    const limit = info.limits[i] || 0;
+    const usage = info.usage[i] || 0;
+    if (limit && usage / limit > 0.9) return true;
+  }
+  return false;
+}
+
+async function fetchStravaJson(url, accessToken) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const text = await response.text();
+    let json = null;
+    try {
+      json = JSON.parse(text || "{}");
+    } catch {
+      json = null;
+    }
+    return { ok: response.ok, status: response.status, json, headers: response.headers };
+  } catch (error) {
+    return { ok: false, status: 0, json: null, headers: new Map(), error };
+  }
+}
+
+function streamCachePath(cacheDir, activityId, keys) {
+  const safeKeys = keys.join("_");
+  return path.join(cacheDir, "streams", `${activityId}__${safeKeys}.json`);
+}
+
+function activityCachePath(cacheDir, activityId) {
+  return path.join(cacheDir, "activities", `${activityId}.json`);
+}
+
+async function fetchActivityDetailsWithCache(activity, accessToken, cacheDir, fetchState, limit) {
+  if (!activity || !activity.id) return null;
+  if (fetchState.stopped_reason) return null;
+  if (fetchState.activity_details_fetched_count >= limit) {
+    fetchState.stopped_reason = "activity_details_limit";
+    return null;
+  }
+  fetchState.activity_details_fetch_attempted = true;
+  const cachePath = activityCachePath(cacheDir, activity.id);
+  const cached = readJsonFile(cachePath);
+  if (cached && cached.response) {
+    fetchState.activity_details_cache_hits += 1;
+    return cached.response;
+  }
+
+  if (!accessToken) return null;
+  const url = `https://www.strava.com/api/v3/activities/${activity.id}`;
+  const result = await fetchStravaJson(url, accessToken);
+  if (result.status === 429) {
+    fetchState.stopped_reason = "rate_limit";
+    return null;
+  }
+  if (shouldStopForRateLimit(result.headers)) {
+    fetchState.stopped_reason = "rate_limit";
+  }
+  if (!result.ok || !result.json) return null;
+  fetchState.activity_details_fetched_count += 1;
+  writeJsonFile(cachePath, {
+    fetched_at: new Date().toISOString(),
+    activity_id: activity.id,
+    response: result.json,
+  });
+  return result.json;
+}
+
+async function fetchActivityStreamsWithCache(activity, keys, accessToken, cacheDir, fetchState, limit) {
+  if (!activity || !activity.id) return null;
+  if (fetchState.stopped_reason) return null;
+  fetchState.streams_fetch_attempted = true;
+  const cachePath = streamCachePath(cacheDir, activity.id, keys);
+  const cached = readJsonFile(cachePath);
+  if (cached && cached.response) {
+    fetchState.streams_cache_hits += 1;
+    return cached.response;
+  }
+  if (fetchState.streams_fetched_count >= limit) {
+    fetchState.stopped_reason = "streams_limit";
+    return null;
+  }
+  if (!accessToken) return null;
+  const url = `https://www.strava.com/api/v3/activities/${activity.id}/streams?keys=${keys.join(
+    ","
+  )}&key_by_type=true`;
+  const result = await fetchStravaJson(url, accessToken);
+  if (result.status === 429) {
+    fetchState.stopped_reason = "rate_limit";
+    return null;
+  }
+  if (shouldStopForRateLimit(result.headers)) {
+    fetchState.stopped_reason = "rate_limit";
+  }
+  if (!result.ok || !result.json) return null;
+  fetchState.streams_fetched_count += 1;
+  writeJsonFile(cachePath, {
+    fetched_at: new Date().toISOString(),
+    activity_id: activity.id,
+    keys,
+    response: result.json,
+  });
+  return result.json;
+}
+
+async function enrichActivitiesWithDetails(activities, accessToken, cacheDir, fetchState, limit) {
+  if (!activities.length) return;
+  const candidates = activities
+    .filter((act) => activityNeedsDetails(act))
+    .sort((a, b) => {
+      const da = activityDate(a);
+      const db = activityDate(b);
+      if (!da || !db) return 0;
+      return db.getTime() - da.getTime();
+    });
+  for (const act of candidates) {
+    if (fetchState.stopped_reason) break;
+    const details = await fetchActivityDetailsWithCache(act, accessToken, cacheDir, fetchState, limit);
+    if (details && typeof details === "object") {
+      Object.assign(act, details);
+    }
+  }
 }
 
 async function fetchActivityZones(primaryActs, accessToken, limit = 60) {
@@ -1003,6 +1327,381 @@ function computeBikeFtpLoad(primaryActs, primaryStart, endDate, athleteMeta) {
   };
 }
 
+function recentActivities(activities, endDate, days) {
+  const cutoff = new Date(endDate.getTime());
+  cutoff.setUTCDate(cutoff.getUTCDate() - days);
+  return activities.filter((act) => {
+    const dt = activityDate(act);
+    return dt && dt >= cutoff && dt <= endDate;
+  });
+}
+
+async function estimateFtpFromStreams(activities, endDate, fetchContext) {
+  const candidates = recentActivities(activities, endDate, 180)
+    .filter((act) => normalizeSport(act.sport_type || act.type) === "bike")
+    .filter((act) => !activityIsAssistedRide(act))
+    .filter((act) => {
+      const dur = activityDurationSec(act);
+      return dur && dur >= 20 * 60 && dur <= 120 * 60;
+    });
+
+  if (!candidates.length) return null;
+
+  const ranked = [...candidates].sort((a, b) => {
+    const wa = activityWeightedAverageWatts(a) || activityAverageWatts(a) || 0;
+    const wb = activityWeightedAverageWatts(b) || activityAverageWatts(b) || 0;
+    return wb - wa;
+  });
+
+  const mp20s = [];
+  const maxSamples = 15;
+  for (const act of ranked.slice(0, maxSamples)) {
+    if (fetchContext.state && fetchContext.state.stopped_reason) break;
+    const streams = fetchContext.fetchStreams
+      ? await fetchContext.fetchStreams(act, ["time", "watts"])
+      : null;
+    if (!streams) continue;
+    const mapped = Array.isArray(streams) ? mapFromArray(streams) : streams;
+    const time = toDataArray(mapped.time);
+    const watts = toDataArray(mapped.watts);
+    if (!time || !watts) continue;
+    const mp20 = maxRollingAverage(time, watts, 20 * 60);
+    if (mp20 && Number.isFinite(mp20)) mp20s.push(mp20);
+  }
+
+  if (!mp20s.length) return null;
+  const sampleCount = mp20s.length;
+  const p90 = percentile(mp20s, 90);
+  const estimate = sampleCount >= 5 ? p90 : Math.max(...mp20s);
+  const ftpEst = Number((estimate * 0.95).toFixed(1));
+  let quality = "low";
+  if (sampleCount >= 5) quality = "high";
+  else if (sampleCount >= 2) quality = "medium";
+  return { value: ftpEst, source: "estimated_mp20", quality, samples: sampleCount };
+}
+
+async function estimateHrMax(activities, fetchContext) {
+  const maxSamples = activities
+    .map((act) => activityMaxHeartRate(act))
+    .filter((val) => Number.isFinite(val));
+  if (maxSamples.length) {
+    const p98 = percentile(maxSamples, 98);
+    const value = clamp(Math.round(p98), 160, 220);
+    return { value, source: "summary_max_heartrate", quality: maxSamples.length >= 20 ? "high" : "medium" };
+  }
+
+  if (fetchContext.fetchStreams) {
+    const peaks = [];
+    const ranked = recentActivities(activities, fetchContext.endDate, 180).slice(0, 10);
+    for (const act of ranked) {
+      if (fetchContext.state && fetchContext.state.stopped_reason) break;
+      const streams = await fetchContext.fetchStreams(act, ["time", "heartrate"]);
+      if (!streams) continue;
+      const mapped = Array.isArray(streams) ? mapFromArray(streams) : streams;
+      const hr = toDataArray(mapped.heartrate);
+      if (!hr) continue;
+      const peak = Math.max(...hr.filter((v) => Number.isFinite(v)));
+      if (Number.isFinite(peak)) peaks.push(peak);
+    }
+    if (peaks.length) {
+      const p98 = percentile(peaks, 98);
+      const value = clamp(Math.round(p98), 160, 220);
+      return { value, source: "stream_peak", quality: peaks.length >= 5 ? "medium" : "low" };
+    }
+  }
+  return null;
+}
+
+async function estimateLthr(activities, hrMax, fetchContext) {
+  const candidates = recentActivities(activities, fetchContext.endDate, 180)
+    .filter((act) => {
+      const dur = activityDurationSec(act);
+      return dur && dur >= 30 * 60;
+    })
+    .filter((act) => activityAverageHeartRate(act));
+
+  const ranked = [...candidates].sort((a, b) => (activityAverageHeartRate(b) || 0) - (activityAverageHeartRate(a) || 0));
+  const maxSamples = [];
+
+  if (fetchContext.fetchStreams) {
+    for (const act of ranked.slice(0, 10)) {
+      if (fetchContext.state && fetchContext.state.stopped_reason) break;
+      const streams = await fetchContext.fetchStreams(act, ["time", "heartrate"]);
+      if (!streams) continue;
+      const mapped = Array.isArray(streams) ? mapFromArray(streams) : streams;
+      const time = toDataArray(mapped.time);
+      const hr = toDataArray(mapped.heartrate);
+      if (!time || !hr) continue;
+      const max30 = maxRollingAverage(time, hr, 30 * 60);
+      if (max30 && Number.isFinite(max30)) maxSamples.push(max30);
+    }
+  }
+
+  if (maxSamples.length) {
+    const p90 = percentile(maxSamples, 90);
+    let value = Math.round(p90);
+    if (hrMax) {
+      value = clamp(value, Math.round(0.8 * hrMax), Math.round(0.95 * hrMax));
+    }
+    let quality = "low";
+    if (maxSamples.length >= 5) quality = "high";
+    else if (maxSamples.length >= 2) quality = "medium";
+    return { value, source: "stream_max30min", quality, samples: maxSamples.length };
+  }
+
+  if (hrMax) {
+    const value = Math.round(0.9 * hrMax);
+    return { value, source: "derived_hrmax", quality: "low", samples: 0 };
+  }
+
+  return null;
+}
+
+function estimateRunThreshold(activities, endDate) {
+  const candidates = recentActivities(activities, endDate, 180)
+    .filter((act) => normalizeSport(act.sport_type || act.type) === "run")
+    .filter((act) => {
+      const dur = activityDurationSec(act);
+      const dist = activityDistanceM(act);
+      return dur && dist && dur >= 20 * 60 && dur <= 70 * 60 && dist >= 3000;
+    })
+    .map((act) => activityGradeAdjustedSpeedMps(act))
+    .filter((v) => Number.isFinite(v));
+
+  if (candidates.length) {
+    const vthr = percentile(candidates, 90);
+    let quality = "low";
+    if (candidates.length >= 8) quality = "high";
+    else if (candidates.length >= 3) quality = "medium";
+    return { value: Number(vthr.toFixed(3)), source: "p90_speed", quality, samples: candidates.length };
+  }
+
+  const fallback = recentActivities(activities, endDate, 180)
+    .filter((act) => normalizeSport(act.sport_type || act.type) === "run")
+    .map((act) => activityGradeAdjustedSpeedMps(act))
+    .filter((v) => Number.isFinite(v));
+  if (fallback.length) {
+    const med = median(fallback);
+    return {
+      value: Number((med * 1.2).toFixed(3)),
+      source: "scaled_median",
+      quality: "low",
+      samples: fallback.length,
+    };
+  }
+  return null;
+}
+
+function estimateSwimCss(activities, endDate) {
+  const candidates = recentActivities(activities, endDate, 180)
+    .filter((act) => normalizeSport(act.sport_type || act.type) === "swim")
+    .filter((act) => {
+      const dist = activityDistanceM(act);
+      return dist && dist >= 400 && dist <= 2000;
+    })
+    .map((act) => activityPaceSecPer100m(act))
+    .filter((v) => Number.isFinite(v));
+  if (!candidates.length) return null;
+  const css = percentile(candidates, 20);
+  let quality = "low";
+  if (candidates.length >= 8) quality = "high";
+  else if (candidates.length >= 3) quality = "medium";
+  return { value: Number(css.toFixed(1)), source: "p20_pace", quality, samples: candidates.length };
+}
+
+function computeActivityLoad(activity, discipline, thresholds) {
+  const durSec = activityDurationSec(activity);
+  if (!durSec || durSec <= 0) return null;
+  if (discipline === "bike" && activityIsAssistedRide(activity)) {
+    return { load_points: 0, method: "excluded_assisted", method_quality: "low", if_value: 0 };
+  }
+
+  const hours = durSec / 3600;
+  const avgHr = activityAverageHeartRate(activity);
+  const lthr = thresholds.hr_lthr_bpm;
+
+  if (discipline === "bike") {
+    const ftp = thresholds.ftp_w;
+    const watts = activityAverageWatts(activity);
+    if (watts && ftp) {
+      const ifVal = clamp(watts / ftp, LOAD_MODEL.if_clamp.bike[0], LOAD_MODEL.if_clamp.bike[1]);
+      return {
+        load_points: Number((hours * Math.pow(ifVal, 2)).toFixed(3)),
+        method: "power",
+        method_quality: "high",
+        if_value: ifVal,
+      };
+    }
+    if (avgHr && lthr) {
+      const ifVal = clamp(avgHr / lthr, LOAD_MODEL.if_clamp.hr[0], LOAD_MODEL.if_clamp.hr[1]);
+      return {
+        load_points: Number((hours * Math.pow(ifVal, 2)).toFixed(3)),
+        method: "hr",
+        method_quality: "medium",
+        if_value: ifVal,
+      };
+    }
+    const assumed = activityIsCommute(activity) ? LOAD_MODEL.default_if.bike_commute : LOAD_MODEL.default_if.bike;
+    return {
+      load_points: Number((hours * Math.pow(assumed, 2)).toFixed(3)),
+      method: "assumed",
+      method_quality: "low",
+      if_value: assumed,
+    };
+  }
+
+  if (discipline === "run") {
+    const vthr = thresholds.vthr_run_mps;
+    const speed = activityGradeAdjustedSpeedMps(activity);
+    if (vthr && speed) {
+      const ifVal = clamp(speed / vthr, LOAD_MODEL.if_clamp.run[0], LOAD_MODEL.if_clamp.run[1]);
+      return {
+        load_points: Number((hours * Math.pow(ifVal, 2)).toFixed(3)),
+        method: "pace",
+        method_quality: "high",
+        if_value: ifVal,
+      };
+    }
+    if (avgHr && lthr) {
+      const ifVal = clamp(avgHr / lthr, LOAD_MODEL.if_clamp.hr[0], LOAD_MODEL.if_clamp.hr[1]);
+      return {
+        load_points: Number((hours * Math.pow(ifVal, 2)).toFixed(3)),
+        method: "hr",
+        method_quality: "medium",
+        if_value: ifVal,
+      };
+    }
+    const assumed = LOAD_MODEL.default_if.run;
+    return {
+      load_points: Number((hours * Math.pow(assumed, 2)).toFixed(3)),
+      method: "assumed",
+      method_quality: "low",
+      if_value: assumed,
+    };
+  }
+
+  if (discipline === "swim") {
+    const css = thresholds.css_sec_per_100m;
+    const pace = activityPaceSecPer100m(activity);
+    if (css && pace) {
+      const ifVal = clamp(css / pace, LOAD_MODEL.if_clamp.swim[0], LOAD_MODEL.if_clamp.swim[1]);
+      return {
+        load_points: Number((hours * Math.pow(ifVal, 2)).toFixed(3)),
+        method: "pace",
+        method_quality: "high",
+        if_value: ifVal,
+      };
+    }
+    const assumed = LOAD_MODEL.default_if.swim;
+    return {
+      load_points: Number((hours * Math.pow(assumed, 2)).toFixed(3)),
+      method: "assumed",
+      method_quality: "low",
+      if_value: assumed,
+    };
+  }
+
+  return null;
+}
+
+function computeDailyEwma(dailyLoadMap, startDate, endDate, tauDays) {
+  const alpha = 1 / tauDays;
+  let value = 0;
+  let current = new Date(startDate.getTime());
+  while (current <= endDate) {
+    const key = toIsoDate(current);
+    const load = dailyLoadMap.get(key) || 0;
+    value = value + (load - value) * alpha;
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return Number(value.toFixed(2));
+}
+
+function computeLoadData(activities, primaryStart, endDate, thresholds) {
+  const perDiscipline = {
+    run: { dailyMap: new Map(), weeklyMap: new Map(), methodHours: {}, totalHours: 0 },
+    bike: { dailyMap: new Map(), weeklyMap: new Map(), methodHours: {}, totalHours: 0 },
+    swim: { dailyMap: new Map(), weeklyMap: new Map(), methodHours: {}, totalHours: 0 },
+  };
+  const overallDailyMap = new Map();
+
+  for (const act of activities) {
+    const discipline = normalizeSport(act.sport_type || act.type);
+    if (!discipline) continue;
+    const actDate = activityDate(act);
+    if (!actDate) continue;
+    const load = computeActivityLoad(act, discipline, thresholds);
+    if (!load) continue;
+
+    const dayKey = toIsoDate(actDate);
+    const current = perDiscipline[discipline].dailyMap.get(dayKey) || 0;
+    perDiscipline[discipline].dailyMap.set(dayKey, current + load.load_points);
+    const overall = overallDailyMap.get(dayKey) || 0;
+    overallDailyMap.set(dayKey, overall + load.load_points);
+
+    if (actDate >= primaryStart && actDate <= endDate) {
+      const wkKey = weekStart(actDate).toISOString();
+      const wkCurrent = perDiscipline[discipline].weeklyMap.get(wkKey) || 0;
+      perDiscipline[discipline].weeklyMap.set(wkKey, wkCurrent + load.load_points);
+
+      const durSec = activityDurationSec(act) || 0;
+      const durHours = durSec / 3600;
+      perDiscipline[discipline].totalHours += durHours;
+      const methodKey =
+        load.method === "excluded_assisted"
+          ? "excluded_assisted"
+          : load.method === "power"
+          ? "power"
+          : load.method === "pace"
+          ? "pace"
+          : load.method === "hr"
+          ? "hr"
+          : "assumed";
+      perDiscipline[discipline].methodHours[methodKey] =
+        (perDiscipline[discipline].methodHours[methodKey] || 0) + durHours;
+    }
+  }
+
+  const weeks = daterangeWeeks(primaryStart, endDate);
+  const loadPoints = {};
+  for (const discipline of ["run", "bike", "swim"]) {
+    const weeklyValues = weeks.map((wk) => perDiscipline[discipline].weeklyMap.get(wk.toISOString()) || 0);
+    const totalHours = perDiscipline[discipline].totalHours || 0;
+    const methodHours = perDiscipline[discipline].methodHours || {};
+    loadPoints[discipline] = {
+      weekly: weeklyValues,
+      method_coverage: {
+        hours_power: Number(((methodHours.power || 0) / (totalHours || 1)).toFixed(3)),
+        hours_pace: Number(((methodHours.pace || 0) / (totalHours || 1)).toFixed(3)),
+        hours_hr: Number(((methodHours.hr || 0) / (totalHours || 1)).toFixed(3)),
+        hours_assumed: Number(((methodHours.assumed || 0) / (totalHours || 1)).toFixed(3)),
+        hours_excluded_assisted: Number(((methodHours.excluded_assisted || 0) / (totalHours || 1)).toFixed(3)),
+      },
+    };
+  }
+
+  return { perDiscipline, overallDailyMap, loadPoints, weeks };
+}
+
+function coverageConfidence(discipline, coverage) {
+  if (!coverage) return "low";
+  const topTier =
+    discipline === "bike" ? coverage.hours_power : discipline === "run" ? coverage.hours_pace : coverage.hours_pace;
+  if (topTier >= 0.6) return "high";
+  if (topTier >= 0.3) return "medium";
+  return "low";
+}
+
+function confidenceRank(value) {
+  if (value === "high") return 3;
+  if (value === "medium") return 2;
+  return 1;
+}
+
+function minConfidence(current, coverageLevel) {
+  return confidenceRank(current) <= confidenceRank(coverageLevel) ? current : coverageLevel;
+}
+
 function extractZoneMinutes(activity, zoneType) {
   if (!activity || !Array.isArray(activity.zones)) return null;
   const zone = activity.zones.find((entry) => entry && entry.type === zoneType);
@@ -1188,25 +1887,87 @@ async function main() {
   );
 
   const athleteMeta = loadAthleteMeta(options);
+  const cacheDir = resolveCacheDir(options.streamsCacheDir);
+  const fetchState = {
+    streams_fetch_attempted: false,
+    streams_fetched_count: 0,
+    streams_cache_hits: 0,
+    activity_details_fetch_attempted: false,
+    activity_details_fetched_count: 0,
+    activity_details_cache_hits: 0,
+    stopped_reason: null,
+  };
+
   const shouldFetchZones = shouldFetchActivityZones(options.fetchActivityZones, athleteMeta.summit);
   const shouldFetchSegments = shouldFetchSegmentEfforts(options.fetchSegmentEfforts, athleteMeta.summit);
-  let fetchedZonesCount = 0;
-  let segmentEffortStats = null;
-  if (shouldFetchZones || shouldFetchSegments) {
+  const wantsStreams = shouldFetchStreams(options.fetchStreams);
+  const wantsDetails = shouldFetchActivityDetails(options.fetchActivityDetails);
+
+  let accessToken = null;
+  if (shouldFetchZones || shouldFetchSegments || wantsStreams || wantsDetails) {
     const config = await loadStravaConfig(options.stravaConfig);
     if (config && config.config && config.config.accessToken) {
-      if (shouldFetchZones) {
-        fetchedZonesCount = await fetchActivityZones(primaryActs, config.config.accessToken, options.activityZonesLimit);
-      }
-      if (shouldFetchSegments) {
-        segmentEffortStats = await fetchSegmentEfforts(
-          primaryActs,
-          config.config.accessToken,
-          options.segmentEffortsLimit
-        );
-      }
+      accessToken = config.config.accessToken;
     }
   }
+
+  if (wantsDetails) {
+    await enrichActivitiesWithDetails(activities, accessToken, cacheDir, fetchState, options.activityDetailsLimit);
+  }
+
+  const fetchContext = {
+    endDate,
+    state: fetchState,
+    fetchStreams: wantsStreams
+      ? async (activity, keys) =>
+          fetchActivityStreamsWithCache(activity, keys, accessToken, cacheDir, fetchState, options.streamsLimit)
+      : null,
+  };
+
+  let fetchedZonesCount = 0;
+  let segmentEffortStats = null;
+  if (accessToken) {
+    if (shouldFetchZones) {
+      fetchedZonesCount = await fetchActivityZones(primaryActs, accessToken, options.activityZonesLimit);
+    }
+    if (shouldFetchSegments) {
+      segmentEffortStats = await fetchSegmentEfforts(primaryActs, accessToken, options.segmentEffortsLimit);
+    }
+  }
+
+  if (!athleteMeta.ftp_w) {
+    const ftpEstimate = await estimateFtpFromStreams(activities, endDate, fetchContext);
+    if (ftpEstimate && ftpEstimate.value) {
+      athleteMeta.ftp_w = ftpEstimate.value;
+      athleteMeta.ftp_source = ftpEstimate.source;
+      athleteMeta.ftp_quality = ftpEstimate.quality;
+    }
+  }
+
+  const hrMaxEstimate = await estimateHrMax(activities, fetchContext);
+  if (hrMaxEstimate && hrMaxEstimate.value) {
+    athleteMeta.hr_max_bpm = hrMaxEstimate.value;
+    athleteMeta.hr_max_source = hrMaxEstimate.source;
+    athleteMeta.hr_max_quality = hrMaxEstimate.quality;
+  } else {
+    athleteMeta.hr_max_bpm = null;
+    athleteMeta.hr_max_source = null;
+    athleteMeta.hr_max_quality = "unknown";
+  }
+
+  const lthrEstimate = await estimateLthr(activities, athleteMeta.hr_max_bpm, fetchContext);
+  if (lthrEstimate && lthrEstimate.value) {
+    athleteMeta.hr_lthr_bpm = lthrEstimate.value;
+    athleteMeta.hr_lthr_source = lthrEstimate.source;
+    athleteMeta.hr_lthr_quality = lthrEstimate.quality;
+  } else {
+    athleteMeta.hr_lthr_bpm = null;
+    athleteMeta.hr_lthr_source = null;
+    athleteMeta.hr_lthr_quality = "unknown";
+  }
+
+  const runThreshold = estimateRunThreshold(activities, endDate);
+  const swimCss = estimateSwimCss(activities, endDate);
 
   const baseline = {
     generated_at: toIsoDate(new Date()),
@@ -1225,6 +1986,28 @@ async function main() {
       note: "Recent 56 days weighted more heavily; historical data retained to avoid false zero baselines.",
     },
     athlete_meta: athleteMeta,
+    load_model: {
+      ewma_tau_days: LOAD_MODEL.ewma_tau_days,
+      if_clamp: LOAD_MODEL.if_clamp,
+      default_if: LOAD_MODEL.default_if,
+      method_priority: LOAD_MODEL.method_priority,
+    },
+    data_quality: {
+      streams_fetch_attempted: Boolean(fetchState.streams_fetch_attempted),
+      streams_fetched_count: fetchState.streams_fetched_count,
+      streams_cache_hit_rate:
+        fetchState.streams_cache_hits + fetchState.streams_fetched_count > 0
+          ? Number(
+              (
+                fetchState.streams_cache_hits /
+                (fetchState.streams_cache_hits + fetchState.streams_fetched_count)
+              ).toFixed(3)
+            )
+          : 0,
+      activity_details_fetch_attempted: Boolean(fetchState.activity_details_fetch_attempted),
+      activity_details_fetched_count: fetchState.activity_details_fetched_count,
+      stopped_early_reason: fetchState.stopped_reason,
+    },
     premium_features: {
       summit: athleteMeta.summit,
       activity_zones: {
@@ -1283,7 +2066,61 @@ async function main() {
     baseline.disciplines.bike.power_wkg = baseline.disciplines.bike.intensity.power_wkg;
   }
 
-  athleteMeta.ftp_quality = computeFtpQuality(athleteMeta, baseline.disciplines.bike);
+  baseline.disciplines.run.threshold = {
+    vthr_mps: runThreshold ? runThreshold.value : null,
+    source: runThreshold ? runThreshold.source : null,
+    quality: runThreshold ? runThreshold.quality : "unknown",
+  };
+  baseline.disciplines.swim.threshold = {
+    css_sec_per_100m: swimCss ? swimCss.value : null,
+    source: swimCss ? swimCss.source : null,
+    quality: swimCss ? swimCss.quality : "unknown",
+  };
+
+  const thresholds = {
+    ftp_w: athleteMeta.ftp_w,
+    hr_lthr_bpm: athleteMeta.hr_lthr_bpm,
+    vthr_run_mps: runThreshold ? runThreshold.value : null,
+    css_sec_per_100m: swimCss ? swimCss.value : null,
+  };
+
+  const loadData = computeLoadData(activities, primaryStart, endDate, thresholds);
+  for (const discipline of ["run", "bike", "swim"]) {
+    const weeklyValues = loadData.loadPoints[discipline].weekly;
+    const coverage = loadData.loadPoints[discipline].method_coverage;
+    const ctl = computeDailyEwma(
+      loadData.perDiscipline[discipline].dailyMap,
+      allStart,
+      endDate,
+      LOAD_MODEL.ewma_tau_days.ctl
+    );
+    const atl = computeDailyEwma(
+      loadData.perDiscipline[discipline].dailyMap,
+      allStart,
+      endDate,
+      LOAD_MODEL.ewma_tau_days.atl
+    );
+    baseline.disciplines[discipline].load_points = {
+      weekly_median: Number(median(weeklyValues).toFixed(2)),
+      weekly_iqr: iqr(weeklyValues),
+      weekly_cv: Number(coefficientOfVariation(weeklyValues).toFixed(3)),
+      weeks_tracked: weeklyValues.length,
+      ctl_end: ctl,
+      atl_end: atl,
+      tsb_end: Number((ctl - atl).toFixed(2)),
+      method_coverage: coverage,
+      method: "if_squared",
+    };
+    const coverageLevel = coverageConfidence(discipline, coverage);
+    baseline.disciplines[discipline].confidence = minConfidence(baseline.disciplines[discipline].confidence, coverageLevel);
+  }
+
+  const computedFtpQuality = computeFtpQuality(athleteMeta, baseline.disciplines.bike);
+  if (athleteMeta.ftp_source === "estimated_mp20") {
+    if (computedFtpQuality === "low") athleteMeta.ftp_quality = "low";
+  } else {
+    athleteMeta.ftp_quality = computedFtpQuality;
+  }
   if (segmentEffortStats && athleteMeta.ftp_w && segmentEffortStats.bike_best_avg_watts) {
     const ratio = segmentEffortStats.bike_best_avg_watts / athleteMeta.ftp_w;
     if (ratio > 1.2) athleteMeta.ftp_quality = "low";
@@ -1302,7 +2139,6 @@ async function main() {
     if (ftpMetrics) {
       baseline.disciplines.bike.intensity = baseline.disciplines.bike.intensity || {};
       baseline.disciplines.bike.intensity.if = ftpMetrics.intensity_if;
-      baseline.disciplines.bike.load_points = ftpMetrics.load_points;
     }
   }
 
@@ -1356,6 +2192,10 @@ async function main() {
   );
   mdLines.push(`- FTP: ${baseline.athlete_meta.ftp_w || "unknown"}`);
   mdLines.push(`- FTP quality: ${baseline.athlete_meta.ftp_quality || "unknown"}`);
+  mdLines.push(`- HR max: ${baseline.athlete_meta.hr_max_bpm || "unknown"}`);
+  mdLines.push(`- HR max quality: ${baseline.athlete_meta.hr_max_quality || "unknown"}`);
+  mdLines.push(`- LTHR: ${baseline.athlete_meta.hr_lthr_bpm || "unknown"}`);
+  mdLines.push(`- LTHR quality: ${baseline.athlete_meta.hr_lthr_quality || "unknown"}`);
   mdLines.push(`- Summit: ${baseline.athlete_meta.summit ? "yes" : "no"}`);
   mdLines.push("");
   for (const [discipline, metrics] of Object.entries(baseline.disciplines)) {
@@ -1376,19 +2216,40 @@ async function main() {
         mdLines.push(`- Coverage (device watts): ${metrics.coverage.device_watts_fraction || 0}`);
       }
     }
+    if (metrics.load_points) {
+      const lp = metrics.load_points;
+      mdLines.push(`- Load points weekly median: ${lp.weekly_median || 0}`);
+      mdLines.push(`- Load points weekly CV: ${lp.weekly_cv || 0}`);
+      mdLines.push(`- CTL end: ${lp.ctl_end || 0}`);
+      mdLines.push(`- ATL end: ${lp.atl_end || 0}`);
+      mdLines.push(`- TSB end: ${lp.tsb_end || 0}`);
+      if (lp.method_coverage) {
+        mdLines.push(
+          `- Load method coverage: power ${lp.method_coverage.hours_power || 0}, pace ${lp.method_coverage.hours_pace || 0}, hr ${lp.method_coverage.hours_hr || 0}, assumed ${lp.method_coverage.hours_assumed || 0}, assisted ${lp.method_coverage.hours_excluded_assisted || 0}`
+        );
+      }
+    }
     mdLines.push("");
     if (discipline === "swim") {
       const pace = metrics.pace || {};
+      const threshold = metrics.threshold || {};
       mdLines.push(`- Pace (weighted): ${pace.distance_weighted_sec_per_100m || 0} sec/100m`);
       mdLines.push(`- Pace (median): ${pace.median_sec_per_100m || 0} sec/100m`);
       mdLines.push(`- Pace samples: ${pace.sample_count || 0}`);
+      if (threshold.css_sec_per_100m) {
+        mdLines.push(`- CSS: ${threshold.css_sec_per_100m} sec/100m (${threshold.quality || "unknown"})`);
+      }
       mdLines.push("");
     }
     if (discipline === "run") {
       const pace = metrics.pace || {};
+      const threshold = metrics.threshold || {};
       mdLines.push(`- Pace (weighted): ${pace.distance_weighted_sec_per_km || 0} sec/km`);
       mdLines.push(`- Pace (median): ${pace.median_sec_per_km || 0} sec/km`);
       mdLines.push(`- Pace samples: ${pace.sample_count || 0}`);
+      if (threshold.vthr_mps) {
+        mdLines.push(`- Vthr: ${threshold.vthr_mps} m/s (${threshold.quality || "unknown"})`);
+      }
       mdLines.push("");
     }
     if (discipline === "bike") {
@@ -1436,6 +2297,17 @@ async function main() {
   mdLines.push(
     `- Flag high_cardio_low_impact: ${baseline.composite.flags.high_cardio_low_impact ? "yes" : "no"}`
   );
+  mdLines.push("");
+
+  mdLines.push("## Data Quality");
+  mdLines.push(`- Streams fetch attempted: ${baseline.data_quality.streams_fetch_attempted ? "yes" : "no"}`);
+  mdLines.push(`- Streams fetched: ${baseline.data_quality.streams_fetched_count || 0}`);
+  mdLines.push(`- Streams cache hit rate: ${baseline.data_quality.streams_cache_hit_rate || 0}`);
+  mdLines.push(
+    `- Activity details attempted: ${baseline.data_quality.activity_details_fetch_attempted ? "yes" : "no"}`
+  );
+  mdLines.push(`- Activity details fetched: ${baseline.data_quality.activity_details_fetched_count || 0}`);
+  mdLines.push(`- Stopped early reason: ${baseline.data_quality.stopped_early_reason || "none"}`);
   mdLines.push("");
 
   mdLines.push("## Premium Features");

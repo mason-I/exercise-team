@@ -1,13 +1,18 @@
 {
   "generated_at": "",
-  "window_days": 56,
-  "short_window_days": 14,
-  "long_window_days": 112,
-  "end_date": "",
-  "source": {
-    "input_file": "",
-    "activity_count": 0,
-    "window_activity_count": 0
+  "windows": {
+    "short_days": 14,
+    "primary_days": 56,
+    "long_days": 112,
+    "all_start": "",
+    "all_end": "",
+    "primary_start": "",
+    "primary_end": ""
+  },
+  "weighting": {
+    "mode": "recent_weighted",
+    "recent_window_days": 56,
+    "note": ""
   },
   "athlete_meta": {
     "sex": null,
@@ -16,8 +21,68 @@
     "ftp_w": null,
     "ftp_source": null,
     "ftp_quality": "unknown",
+    "hr_max_bpm": null,
+    "hr_max_source": null,
+    "hr_max_quality": "unknown",
+    "hr_lthr_bpm": null,
+    "hr_lthr_source": null,
+    "hr_lthr_quality": "unknown",
     "summit": false,
     "source": null
+  },
+  "load_model": {
+    "ewma_tau_days": {
+      "ctl": 42,
+      "atl": 7
+    },
+    "if_clamp": {
+      "bike": [
+        0.3,
+        1.3
+      ],
+      "run": [
+        0.5,
+        1.3
+      ],
+      "swim": [
+        0.5,
+        1.3
+      ],
+      "hr": [
+        0.6,
+        1.2
+      ]
+    },
+    "default_if": {
+      "bike": 0.65,
+      "bike_commute": 0.55,
+      "run": 0.7,
+      "swim": 0.65
+    },
+    "method_priority": {
+      "bike": [
+        "power",
+        "hr",
+        "assumed"
+      ],
+      "run": [
+        "pace",
+        "hr",
+        "assumed"
+      ],
+      "swim": [
+        "pace",
+        "assumed"
+      ]
+    }
+  },
+  "data_quality": {
+    "streams_fetch_attempted": false,
+    "streams_fetched_count": 0,
+    "streams_cache_hit_rate": 0,
+    "activity_details_fetch_attempted": false,
+    "activity_details_fetched_count": 0,
+    "stopped_early_reason": null
   },
   "premium_features": {
     "summit": false,
@@ -59,10 +124,40 @@
       "long_session": {
         "weekly_max_median": 0
       },
+      "pace": {
+        "distance_weighted_sec_per_km": 0,
+        "median_sec_per_km": 0,
+        "sample_count": 0
+      },
+      "threshold": {
+        "vthr_mps": null,
+        "source": null,
+        "quality": "unknown"
+      },
       "coverage": {
         "total_activities": 0,
         "pace_or_speed_coverage_fraction": 0,
         "hr_fraction": 0
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 0,
+        "weeks_tracked": 0,
+        "ctl_end": 0,
+        "atl_end": 0,
+        "tsb_end": 0,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 0,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
       },
       "zones": {
         "source": "activity_zones",
@@ -116,7 +211,17 @@
         ],
         "weekly_cv": 0,
         "weeks_tracked": 0,
-        "method": "ftp_if"
+        "ctl_end": 0,
+        "atl_end": 0,
+        "tsb_end": 0,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 0,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
       },
       "coverage": {
         "total_activities": 0,
@@ -163,6 +268,31 @@
         "distance_weighted_sec_per_100m": 0,
         "median_sec_per_100m": 0,
         "sample_count": 0
+      },
+      "threshold": {
+        "css_sec_per_100m": null,
+        "source": null,
+        "quality": "unknown"
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 0,
+        "weeks_tracked": 0,
+        "ctl_end": 0,
+        "atl_end": 0,
+        "tsb_end": 0,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 0,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
       },
       "coverage": {
         "total_activities": 0,
@@ -253,18 +383,16 @@
     "run_intro_weekly_time_min_range": null,
     "transfer_confidence": null
   },
-  "context_windows": {
+  "context": {
     "short_window": {
-      "start_date": "",
-      "end_date": ""
-    },
-    "baseline_window": {
-      "start_date": "",
-      "end_date": ""
+      "start": "",
+      "end": "",
+      "activity_count": 0
     },
     "long_window": {
-      "start_date": "",
-      "end_date": ""
+      "start": "",
+      "end": "",
+      "activity_count": 0
     }
   }
 }
