@@ -5,6 +5,9 @@ Window: 2025-12-10 to 2026-02-03
 ## Athlete
 - Sex: M
 - Weight: 80 kg
+- FTP: 290
+- FTP quality: medium
+- Summit: no
 
 ## Run
 - Confidence: low
@@ -36,12 +39,18 @@ Window: 2025-12-10 to 2026-02-03
 - Speed samples: 27
 - Weekly elevation median: 3094.28 m
 - Session elevation median: 743.48 m
-- Power (weighted): 172.7 W
+- Power (weighted): 173.5 W
 - Power (median): 183.1 W
 - Power samples: 27
-- Power (W/kg, weighted): 2.1
+- Power (W/kg, weighted): 2.11
 - Power (W/kg, median): 2.2
 - Power (W/kg) samples: 27
+- FTP band: 261–319 W
+- FTP band (W/kg): 3.263–3.987
+- IF (weighted): 0.598
+- IF (median): 0.631
+- IF samples: 27
+- Load points weekly median: 2.96
 
 ## Swim
 - Confidence: low
@@ -62,6 +71,15 @@ Window: 2025-12-10 to 2026-02-03
 - Aerobic points (median): 9.13
 - Run time share (median): 0.078
 - Flag high_cardio_low_impact: yes
+
+## Premium Features
+- Summit: no
+- Activity zones attempted: no
+- Activity zones available: no
+- Activity zones fetched: 0
+- Segment efforts attempted: no
+- Segment efforts fetched: 0
+- Segment efforts count: 0
 
 ## Restart Caps
 - Gap days any: 1

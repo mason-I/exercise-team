@@ -48,6 +48,14 @@ function fileExists(path) {
   }
 }
 
+function resolveHome(pathValue) {
+  if (!pathValue) return pathValue;
+  if (pathValue.startsWith("~/")) {
+    return `${process.env.HOME}${pathValue.slice(1)}`;
+  }
+  return pathValue;
+}
+
 function activityDate(activity) {
   for (const key of ["start_date_local", "start_date", "date"]) {
     if (key in activity) {
@@ -101,6 +109,9 @@ function activityPaceSecPer100m(activity) {
 }
 
 function activityAverageWatts(activity) {
+  if ("weighted_average_watts" in activity && activity.weighted_average_watts != null) {
+    return Number(activity.weighted_average_watts);
+  }
   if ("average_watts" in activity && activity.average_watts != null) return Number(activity.average_watts);
   return null;
 }
@@ -553,6 +564,11 @@ function parseArgs() {
     input: "data/strava_activities.json",
     athlete: "data/strava_athlete.json",
     profile: "profile.json",
+    stravaConfig: "~/.config/strava-mcp/config.json",
+    fetchActivityZones: "auto",
+    activityZonesLimit: 60,
+    fetchSegmentEfforts: "auto",
+    segmentEffortsLimit: 8,
     windowDays: 56,
     shortWindow: 14,
     longWindow: 112,
@@ -565,6 +581,11 @@ function parseArgs() {
     if (arg === "--input") options.input = args[i + 1];
     if (arg === "--athlete") options.athlete = args[i + 1];
     if (arg === "--profile") options.profile = args[i + 1];
+    if (arg === "--strava-config") options.stravaConfig = args[i + 1];
+    if (arg === "--fetch-activity-zones") options.fetchActivityZones = args[i + 1];
+    if (arg === "--activity-zones-limit") options.activityZonesLimit = Number(args[i + 1]);
+    if (arg === "--fetch-segment-efforts") options.fetchSegmentEfforts = args[i + 1];
+    if (arg === "--segment-efforts-limit") options.segmentEffortsLimit = Number(args[i + 1]);
     if (arg === "--window-days") options.windowDays = Number(args[i + 1]);
     if (arg === "--short-window") options.shortWindow = Number(args[i + 1]);
     if (arg === "--long-window") options.longWindow = Number(args[i + 1]);
@@ -586,6 +607,8 @@ function selectRecentOrHistorical(recentMetric, historicalMetric, minSamples = 3
 function loadAthleteMeta(options) {
   let sex = null;
   let weightKg = null;
+  let ftpWatts = null;
+  let summit = null;
   let source = null;
 
   if (options.athlete && fileExists(options.athlete)) {
@@ -593,6 +616,8 @@ function loadAthleteMeta(options) {
     if (athlete && typeof athlete === "object") {
       sex = athlete.sex || sex;
       if (athlete.weight != null) weightKg = Number(athlete.weight);
+      if (athlete.ftp != null) ftpWatts = Number(athlete.ftp);
+      if (athlete.summit != null) summit = Boolean(athlete.summit);
       source = "strava_athlete";
     }
   }
@@ -606,12 +631,169 @@ function loadAthleteMeta(options) {
   }
 
   if (!Number.isFinite(weightKg)) weightKg = null;
+  if (!Number.isFinite(ftpWatts)) ftpWatts = null;
 
   return {
     sex: sex || null,
     weight_kg: weightKg,
     has_weight: Number.isFinite(weightKg),
+    ftp_w: ftpWatts,
+    ftp_source: ftpWatts ? source : null,
+    ftp_quality: "unknown",
+    summit: summit === null ? false : Boolean(summit),
     source,
+  };
+}
+
+async function loadStravaConfig(configPath) {
+  const resolved = resolveHome(configPath);
+  if (!fileExists(resolved)) return null;
+  const raw = fs.readFileSync(resolved, "utf-8");
+  const config = JSON.parse(raw);
+  const now = Math.floor(Date.now() / 1000);
+  if (config.expiresAt && config.expiresAt > now + 60) {
+    return { config, path: resolved };
+  }
+  if (!config.refreshToken || !config.clientId || !config.clientSecret) {
+    return { config, path: resolved };
+  }
+  try {
+    const params = new URLSearchParams({
+      client_id: String(config.clientId),
+      client_secret: String(config.clientSecret),
+      refresh_token: String(config.refreshToken),
+      grant_type: "refresh_token",
+    });
+    const response = await fetch("https://www.strava.com/oauth/token", {
+      method: "POST",
+      body: params,
+    });
+    if (!response.ok) {
+      return { config, path: resolved };
+    }
+    const data = await response.json();
+    config.accessToken = data.access_token;
+    config.refreshToken = data.refresh_token;
+    config.expiresAt = data.expires_at;
+    fs.writeFileSync(resolved, JSON.stringify(config, null, 2));
+    return { config, path: resolved };
+  } catch (error) {
+    return { config, path: resolved };
+  }
+}
+
+function shouldFetchActivityZones(mode, summit) {
+  if (mode === "true") return true;
+  if (mode === "false") return false;
+  return Boolean(summit);
+}
+
+function shouldFetchSegmentEfforts(mode, summit) {
+  if (mode === "true") return true;
+  if (mode === "false") return false;
+  return Boolean(summit);
+}
+
+function parseRateLimit(headers) {
+  const limitHeader = headers.get("x-ratelimit-limit");
+  const usageHeader = headers.get("x-ratelimit-usage");
+  if (!limitHeader || !usageHeader) return null;
+  const limits = limitHeader.split(",").map((v) => Number(v));
+  const usage = usageHeader.split(",").map((v) => Number(v));
+  if (!limits.length || !usage.length) return null;
+  return { limits, usage };
+}
+
+async function fetchActivityZones(primaryActs, accessToken, limit = 60) {
+  const sorted = [...primaryActs]
+    .filter((act) => normalizeSport(act.sport_type || act.type))
+    .sort((a, b) => {
+      const da = activityDate(a);
+      const db = activityDate(b);
+      if (!da || !db) return 0;
+      return db.getTime() - da.getTime();
+    })
+    .slice(0, limit);
+
+  let fetched = 0;
+  for (const act of sorted) {
+    if (!act || !act.id) continue;
+    try {
+      const response = await fetch(`https://www.strava.com/api/v3/activities/${act.id}/zones`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (response.status === 429) break;
+      if (response.status === 403 || response.status === 402) continue;
+      if (!response.ok) continue;
+      const data = await response.json();
+      if (Array.isArray(data) && data.length) {
+        act.zones = data;
+        fetched += 1;
+      }
+      const rate = parseRateLimit(response.headers);
+      if (rate && rate.limits[0] && rate.usage[0] / rate.limits[0] > 0.9) {
+        break;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  return fetched;
+}
+
+async function fetchSegmentEfforts(primaryActs, accessToken, limit = 8) {
+  const candidates = [...primaryActs]
+    .filter((act) => ["run", "bike"].includes(normalizeSport(act.sport_type || act.type)))
+    .sort((a, b) => {
+      const da = activityDurationSec(a) || 0;
+      const db = activityDurationSec(b) || 0;
+      return db - da;
+    })
+    .slice(0, limit);
+
+  let fetchedActivities = 0;
+  let effortCount = 0;
+  let bikeBestWatts = null;
+  let runBestSpeed = null;
+
+  for (const act of candidates) {
+    if (!act || !act.id) continue;
+    try {
+      const response = await fetch(`https://www.strava.com/api/v3/activities/${act.id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (response.status === 429) break;
+      if (!response.ok) continue;
+      const detail = await response.json();
+      if (Array.isArray(detail.segment_efforts) && detail.segment_efforts.length) {
+        act.segment_efforts = detail.segment_efforts;
+        fetchedActivities += 1;
+        for (const effort of detail.segment_efforts) {
+          if (!effort || effort.elapsed_time == null || effort.elapsed_time < 600) continue;
+          effortCount += 1;
+          const discipline = normalizeSport(act.sport_type || act.type);
+          if (discipline === "bike" && effort.average_watts) {
+            bikeBestWatts = Math.max(bikeBestWatts || 0, effort.average_watts);
+          }
+          if (discipline === "run" && effort.average_speed) {
+            runBestSpeed = Math.max(runBestSpeed || 0, effort.average_speed);
+          }
+        }
+      }
+      const rate = parseRateLimit(response.headers);
+      if (rate && rate.limits[0] && rate.usage[0] / rate.limits[0] > 0.9) {
+        break;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return {
+    fetched_count: fetchedActivities,
+    effort_count: effortCount,
+    bike_best_avg_watts: bikeBestWatts,
+    run_best_avg_speed: runBestSpeed,
   };
 }
 
@@ -740,6 +922,146 @@ function computeComposite(primaryActs, primaryStart, endDate, baseline, athleteM
   return composite;
 }
 
+function computeFtpQuality(athleteMeta, bikeMetrics) {
+  if (!athleteMeta || !athleteMeta.ftp_w) return "unknown";
+  const ftp = athleteMeta.ftp_w;
+  if (ftp < 100 || ftp > 600) return "low";
+  const power = bikeMetrics && bikeMetrics.power ? bikeMetrics.power.median_watts : 0;
+  const powerSamples = bikeMetrics && bikeMetrics.power ? bikeMetrics.power.sample_count : 0;
+  if (!powerSamples || !power) return "medium";
+  const ratio = power / ftp;
+  if (ratio > 0.9 || ratio < 0.3) return "low";
+  if (ratio > 0.45 && ratio < 0.8) {
+    const deviceFraction = bikeMetrics.coverage ? bikeMetrics.coverage.device_watts_fraction : 0;
+    if (deviceFraction >= 0.5) return "high";
+    return "medium";
+  }
+  return "medium";
+}
+
+function computeFtpBands(ftp, ftpQuality, weightKg) {
+  if (!ftp) return null;
+  let factor = 0.1;
+  if (ftpQuality === "high") factor = 0.07;
+  else if (ftpQuality === "low") factor = 0.15;
+  const band = [
+    Number((ftp * (1 - factor)).toFixed(1)),
+    Number((ftp * (1 + factor)).toFixed(1)),
+  ];
+  const result = { ftp_w_band: band };
+  if (weightKg) {
+    result.ftp_wkg_band = [
+      Number((band[0] / weightKg).toFixed(3)),
+      Number((band[1] / weightKg).toFixed(3)),
+    ];
+  }
+  return result;
+}
+
+function computeBikeFtpLoad(primaryActs, primaryStart, endDate, athleteMeta) {
+  if (!athleteMeta || !athleteMeta.ftp_w) return null;
+  const ftp = athleteMeta.ftp_w;
+  const { weeks, weekMap } = weeklyBuckets(primaryActs, primaryStart, endDate);
+  const ifSamples = [];
+  const ifWeights = [];
+  const weeklyLoadPoints = [];
+
+  for (const wk of weeks) {
+    const weekActs = (weekMap.get(wk.toISOString()) || []).filter(
+      (a) => normalizeSport(a.sport_type || a.type) === "bike"
+    );
+    let weekLoad = 0;
+    for (const act of weekActs) {
+      const watts = activityAverageWatts(act);
+      const durSec = activityDurationSec(act);
+      if (!watts || !durSec || ftp <= 0) continue;
+      const ifVal = watts / ftp;
+      ifSamples.push(ifVal);
+      ifWeights.push(durSec);
+      const durHours = durSec / 3600;
+      weekLoad += durHours * Math.pow(ifVal, 2);
+    }
+    weeklyLoadPoints.push(weekLoad);
+  }
+
+  const ifWeightedSum = ifSamples.reduce((sum, v, i) => sum + v * (ifWeights[i] || 0), 0);
+  const ifWeightTotal = ifWeights.reduce((sum, v) => sum + v, 0);
+
+  return {
+    intensity_if: {
+      duration_weighted_if: Number((ifWeightTotal ? ifWeightedSum / ifWeightTotal : 0).toFixed(3)),
+      median_if: Number(median(ifSamples).toFixed(3)),
+      sample_count: ifSamples.length,
+    },
+    load_points: {
+      weekly_median: Number(median(weeklyLoadPoints).toFixed(2)),
+      weekly_iqr: iqr(weeklyLoadPoints),
+      weekly_cv: Number(coefficientOfVariation(weeklyLoadPoints).toFixed(3)),
+      weeks_tracked: weeklyLoadPoints.length,
+      method: "ftp_if",
+    },
+  };
+}
+
+function extractZoneMinutes(activity, zoneType) {
+  if (!activity || !Array.isArray(activity.zones)) return null;
+  const zone = activity.zones.find((entry) => entry && entry.type === zoneType);
+  if (!zone || !Array.isArray(zone.distribution_buckets)) return null;
+  const minutes = zone.distribution_buckets.map((bucket) => Number((bucket.time || 0) / 60));
+  if (!minutes.length) return null;
+  return minutes;
+}
+
+function computeZonesForDiscipline(primaryActs, primaryStart, endDate, discipline, zoneType) {
+  const { weeks, weekMap } = weeklyBuckets(primaryActs, primaryStart, endDate);
+  const weeklyMinutesByZone = [];
+  const weeklyHighShare = [];
+  let activityCount = 0;
+
+  for (const wk of weeks) {
+    const weekActs = (weekMap.get(wk.toISOString()) || []).filter(
+      (a) => normalizeSport(a.sport_type || a.type) === discipline
+    );
+    const minutesByZone = [];
+    let totalMinutes = 0;
+    let highMinutes = 0;
+    for (const act of weekActs) {
+      const minutes = extractZoneMinutes(act, zoneType);
+      if (!minutes) continue;
+      activityCount += 1;
+      minutes.forEach((val, idx) => {
+        minutesByZone[idx] = (minutesByZone[idx] || 0) + val;
+      });
+      const zoneTotal = minutes.reduce((sum, v) => sum + v, 0);
+      totalMinutes += zoneTotal;
+      const high = minutes
+        .map((val, idx) => (idx >= 3 ? val : 0))
+        .reduce((sum, v) => sum + v, 0);
+      highMinutes += high;
+    }
+    weeklyMinutesByZone.push(minutesByZone);
+    weeklyHighShare.push(totalMinutes ? highMinutes / totalMinutes : 0);
+  }
+
+  const maxZones = weeklyMinutesByZone.reduce((max, arr) => Math.max(max, arr.length), 0);
+  if (!maxZones) return { zones: null, activity_count: 0 };
+  const weeklyMedian = [];
+  for (let i = 0; i < maxZones; i += 1) {
+    const values = weeklyMinutesByZone.map((arr) => arr[i] || 0);
+    weeklyMedian.push(Number(median(values).toFixed(2)));
+  }
+
+  return {
+    zones: {
+      type: zoneType,
+      weekly_minutes_median_by_zone: weeklyMedian,
+      high_intensity_share_median: Number(median(weeklyHighShare).toFixed(3)),
+      weeks_tracked: weeklyMinutesByZone.length,
+    },
+    activity_count: activityCount,
+  };
+}
+
 function computeRestartCaps(baseline, gapDaysAny) {
   const factors = {
     run: [1.0, 0.6, 0.4, 0.25, 0.15],
@@ -827,7 +1149,7 @@ function computeTransfer(baseline, composite) {
   return transfer;
 }
 
-function main() {
+async function main() {
   const options = parseArgs();
   const endDate = options.endDate ? parseDate(options.endDate) : parseDate(toIsoDate(new Date()));
   if (!endDate) {
@@ -866,6 +1188,26 @@ function main() {
   );
 
   const athleteMeta = loadAthleteMeta(options);
+  const shouldFetchZones = shouldFetchActivityZones(options.fetchActivityZones, athleteMeta.summit);
+  const shouldFetchSegments = shouldFetchSegmentEfforts(options.fetchSegmentEfforts, athleteMeta.summit);
+  let fetchedZonesCount = 0;
+  let segmentEffortStats = null;
+  if (shouldFetchZones || shouldFetchSegments) {
+    const config = await loadStravaConfig(options.stravaConfig);
+    if (config && config.config && config.config.accessToken) {
+      if (shouldFetchZones) {
+        fetchedZonesCount = await fetchActivityZones(primaryActs, config.config.accessToken, options.activityZonesLimit);
+      }
+      if (shouldFetchSegments) {
+        segmentEffortStats = await fetchSegmentEfforts(
+          primaryActs,
+          config.config.accessToken,
+          options.segmentEffortsLimit
+        );
+      }
+    }
+  }
+
   const baseline = {
     generated_at: toIsoDate(new Date()),
     windows: {
@@ -883,6 +1225,19 @@ function main() {
       note: "Recent 56 days weighted more heavily; historical data retained to avoid false zero baselines.",
     },
     athlete_meta: athleteMeta,
+    premium_features: {
+      summit: athleteMeta.summit,
+      activity_zones: {
+        attempted: shouldFetchZones,
+        available: fetchedZonesCount > 0,
+        fetched_count: fetchedZonesCount,
+      },
+      segment_efforts: {
+        attempted: shouldFetchSegments,
+        fetched_count: segmentEffortStats ? segmentEffortStats.fetched_count : 0,
+        effort_count: segmentEffortStats ? segmentEffortStats.effort_count : 0,
+      },
+    },
     disciplines: {},
     context: {},
   };
@@ -927,6 +1282,49 @@ function main() {
   if (baseline.disciplines.bike.intensity && baseline.disciplines.bike.intensity.power_wkg) {
     baseline.disciplines.bike.power_wkg = baseline.disciplines.bike.intensity.power_wkg;
   }
+
+  athleteMeta.ftp_quality = computeFtpQuality(athleteMeta, baseline.disciplines.bike);
+  if (segmentEffortStats && athleteMeta.ftp_w && segmentEffortStats.bike_best_avg_watts) {
+    const ratio = segmentEffortStats.bike_best_avg_watts / athleteMeta.ftp_w;
+    if (ratio > 1.2) athleteMeta.ftp_quality = "low";
+  }
+  baseline.athlete_meta = athleteMeta;
+  if (athleteMeta.ftp_w) {
+    const bands = computeFtpBands(athleteMeta.ftp_w, athleteMeta.ftp_quality, athleteMeta.weight_kg);
+    if (bands) {
+      baseline.disciplines.bike.threshold = {
+        ftp_w_band: bands.ftp_w_band,
+        ftp_wkg_band: bands.ftp_wkg_band || null,
+        quality: athleteMeta.ftp_quality,
+      };
+    }
+    const ftpMetrics = computeBikeFtpLoad(primaryActs, primaryStart, endDate, athleteMeta);
+    if (ftpMetrics) {
+      baseline.disciplines.bike.intensity = baseline.disciplines.bike.intensity || {};
+      baseline.disciplines.bike.intensity.if = ftpMetrics.intensity_if;
+      baseline.disciplines.bike.load_points = ftpMetrics.load_points;
+    }
+  }
+
+  if (athleteMeta.summit) {
+    const activitiesWithZones = primaryActs.filter((act) => Array.isArray(act.zones) && act.zones.length).length;
+    for (const discipline of ["run", "bike", "swim"]) {
+      const hrZones = computeZonesForDiscipline(primaryActs, primaryStart, endDate, discipline, "heartrate");
+      const powerZones = computeZonesForDiscipline(primaryActs, primaryStart, endDate, discipline, "power");
+      if (hrZones.zones || powerZones.zones) {
+        baseline.disciplines[discipline].zones = {
+          source: "activity_zones",
+          heartrate: hrZones.zones,
+          power: powerZones.zones,
+        };
+      }
+    }
+    baseline.premium_features.activity_zones.fetched_count = Math.max(
+      baseline.premium_features.activity_zones.fetched_count || 0,
+      activitiesWithZones
+    );
+    baseline.premium_features.activity_zones.available = baseline.premium_features.activity_zones.fetched_count > 0;
+  }
   baseline.context.short_window = {
     start: toIsoDate(shortStart),
     end: toIsoDate(endDate),
@@ -956,6 +1354,9 @@ function main() {
   mdLines.push(
     `- Weight: ${baseline.athlete_meta.has_weight ? baseline.athlete_meta.weight_kg + " kg" : "unknown"}`
   );
+  mdLines.push(`- FTP: ${baseline.athlete_meta.ftp_w || "unknown"}`);
+  mdLines.push(`- FTP quality: ${baseline.athlete_meta.ftp_quality || "unknown"}`);
+  mdLines.push(`- Summit: ${baseline.athlete_meta.summit ? "yes" : "no"}`);
   mdLines.push("");
   for (const [discipline, metrics] of Object.entries(baseline.disciplines)) {
     mdLines.push(`## ${discipline.charAt(0).toUpperCase() + discipline.slice(1)}`);
@@ -993,6 +1394,9 @@ function main() {
     if (discipline === "bike") {
       const speed = metrics.speed || {};
       const power = metrics.power || {};
+      const intensityIf = metrics.intensity ? metrics.intensity.if || {} : {};
+      const threshold = metrics.threshold || {};
+      const loadPoints = metrics.load_points || {};
       mdLines.push(`- Speed (weighted): ${speed.distance_weighted_kmh || 0} km/h`);
       mdLines.push(`- Speed (median): ${speed.median_kmh || 0} km/h`);
       mdLines.push(`- Speed samples: ${speed.sample_count || 0}`);
@@ -1006,6 +1410,20 @@ function main() {
         mdLines.push(`- Power (W/kg, median): ${metrics.power_wkg.median_wkg || 0}`);
         mdLines.push(`- Power (W/kg) samples: ${metrics.power_wkg.sample_count || 0}`);
       }
+      if (threshold.ftp_w_band) {
+        mdLines.push(`- FTP band: ${threshold.ftp_w_band[0]}–${threshold.ftp_w_band[1]} W`);
+      }
+      if (threshold.ftp_wkg_band) {
+        mdLines.push(`- FTP band (W/kg): ${threshold.ftp_wkg_band[0]}–${threshold.ftp_wkg_band[1]}`);
+      }
+      if (intensityIf.sample_count) {
+        mdLines.push(`- IF (weighted): ${intensityIf.duration_weighted_if || 0}`);
+        mdLines.push(`- IF (median): ${intensityIf.median_if || 0}`);
+        mdLines.push(`- IF samples: ${intensityIf.sample_count || 0}`);
+      }
+      if (loadPoints.weekly_median != null) {
+        mdLines.push(`- Load points weekly median: ${loadPoints.weekly_median}`);
+      }
       mdLines.push("");
     }
   }
@@ -1018,6 +1436,22 @@ function main() {
   mdLines.push(
     `- Flag high_cardio_low_impact: ${baseline.composite.flags.high_cardio_low_impact ? "yes" : "no"}`
   );
+  mdLines.push("");
+
+  mdLines.push("## Premium Features");
+  mdLines.push(`- Summit: ${baseline.premium_features.summit ? "yes" : "no"}`);
+  mdLines.push(
+    `- Activity zones attempted: ${baseline.premium_features.activity_zones.attempted ? "yes" : "no"}`
+  );
+  mdLines.push(
+    `- Activity zones available: ${baseline.premium_features.activity_zones.available ? "yes" : "no"}`
+  );
+  mdLines.push(`- Activity zones fetched: ${baseline.premium_features.activity_zones.fetched_count || 0}`);
+  mdLines.push(
+    `- Segment efforts attempted: ${baseline.premium_features.segment_efforts.attempted ? "yes" : "no"}`
+  );
+  mdLines.push(`- Segment efforts fetched: ${baseline.premium_features.segment_efforts.fetched_count || 0}`);
+  mdLines.push(`- Segment efforts count: ${baseline.premium_features.segment_efforts.effort_count || 0}`);
   mdLines.push("");
 
   if (baseline.restart) {
@@ -1056,5 +1490,8 @@ function main() {
 }
 
 if (require.main === module) {
-  main();
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 }

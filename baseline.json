@@ -18,7 +18,24 @@
     "sex": "M",
     "weight_kg": 80,
     "has_weight": true,
+    "ftp_w": 290,
+    "ftp_source": "strava_athlete",
+    "ftp_quality": "medium",
+    "summit": false,
     "source": "strava_athlete"
+  },
+  "premium_features": {
+    "summit": false,
+    "activity_zones": {
+      "attempted": false,
+      "available": false,
+      "fetched_count": 0
+    },
+    "segment_efforts": {
+      "attempted": false,
+      "fetched_count": 0,
+      "effort_count": 0
+    }
   },
   "disciplines": {
     "run": {
@@ -203,12 +220,12 @@
           "sample_count": 27
         },
         "power": {
-          "duration_weighted_watts": 168.1,
+          "duration_weighted_watts": 168.84,
           "median_watts": 175.76,
           "sample_count": 27
         },
         "power_wkg": {
-          "duration_weighted_wkg": 2.1,
+          "duration_weighted_wkg": 2.11,
           "median_wkg": 2.2,
           "sample_count": 27
         },
@@ -216,6 +233,11 @@
           "duration_weighted_bpm": 30.5,
           "median_bpm": 30.64,
           "sample_count": 0
+        },
+        "if": {
+          "duration_weighted_if": 0.598,
+          "median_if": 0.631,
+          "sample_count": 27
         }
       },
       "coverage": {
@@ -262,12 +284,12 @@
               "sample_count": 27
             },
             "power": {
-              "duration_weighted_watts": 172.7,
+              "duration_weighted_watts": 173.5,
               "median_watts": 183.1,
               "sample_count": 27
             },
             "power_wkg": {
-              "duration_weighted_wkg": 2.159,
+              "duration_weighted_wkg": 2.169,
               "median_wkg": 2.289,
               "sample_count": 27
             },
@@ -312,12 +334,12 @@
               "sample_count": 330
             },
             "power": {
-              "duration_weighted_watts": 149.7,
+              "duration_weighted_watts": 150.2,
               "median_watts": 146.4,
               "sample_count": 290
             },
             "power_wkg": {
-              "duration_weighted_wkg": 1.872,
+              "duration_weighted_wkg": 1.877,
               "median_wkg": 1.83,
               "sample_count": 290
             },
@@ -336,14 +358,35 @@
         "sample_count": 27
       },
       "power": {
-        "duration_weighted_watts": 172.7,
+        "duration_weighted_watts": 173.5,
         "median_watts": 183.1,
         "sample_count": 27
       },
       "power_wkg": {
-        "duration_weighted_wkg": 2.1,
+        "duration_weighted_wkg": 2.11,
         "median_wkg": 2.2,
         "sample_count": 27
+      },
+      "threshold": {
+        "ftp_w_band": [
+          261,
+          319
+        ],
+        "ftp_wkg_band": [
+          3.263,
+          3.987
+        ],
+        "quality": "medium"
+      },
+      "load_points": {
+        "weekly_median": 2.96,
+        "weekly_iqr": [
+          2.579312866395825,
+          3.473979648533492
+        ],
+        "weekly_cv": 0.441,
+        "weeks_tracked": 9,
+        "method": "ftp_if"
       }
     },
     "swim": {
@@ -486,7 +529,7 @@
         8.000600283905484,
         10.807629282706323
       ],
-      "aerobic_points_cv": 0.422
+      "aerobic_points_cv": 0.415
     },
     "by_sport": {
       "weekly_aerobic_points_median": {

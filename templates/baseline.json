@@ -13,7 +13,24 @@
     "sex": null,
     "weight_kg": null,
     "has_weight": false,
+    "ftp_w": null,
+    "ftp_source": null,
+    "ftp_quality": "unknown",
+    "summit": false,
     "source": null
+  },
+  "premium_features": {
+    "summit": false,
+    "activity_zones": {
+      "attempted": false,
+      "available": false,
+      "fetched_count": 0
+    },
+    "segment_efforts": {
+      "attempted": false,
+      "fetched_count": 0,
+      "effort_count": 0
+    }
   },
   "disciplines": {
     "run": {
@@ -46,6 +63,11 @@
         "total_activities": 0,
         "pace_or_speed_coverage_fraction": 0,
         "hr_fraction": 0
+      },
+      "zones": {
+        "source": "activity_zones",
+        "heartrate": null,
+        "power": null
       },
       "gap_days_discipline": 0,
       "confidence": "low"
@@ -81,12 +103,32 @@
       "long_session": {
         "weekly_max_median": 0
       },
+      "threshold": {
+        "ftp_w_band": null,
+        "ftp_wkg_band": null,
+        "quality": "unknown"
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 0,
+        "weeks_tracked": 0,
+        "method": "ftp_if"
+      },
       "coverage": {
         "total_activities": 0,
         "pace_or_speed_coverage_fraction": 0,
         "hr_fraction": 0,
         "power_fraction": 0,
         "device_watts_fraction": 0
+      },
+      "zones": {
+        "source": "activity_zones",
+        "heartrate": null,
+        "power": null
       },
       "gap_days_discipline": 0,
       "confidence": "low"
@@ -126,6 +168,11 @@
         "total_activities": 0,
         "pace_or_speed_coverage_fraction": 0,
         "hr_fraction": 0
+      },
+      "zones": {
+        "source": "activity_zones",
+        "heartrate": null,
+        "power": null
       },
       "gap_days_discipline": 0,
       "confidence": "low"
