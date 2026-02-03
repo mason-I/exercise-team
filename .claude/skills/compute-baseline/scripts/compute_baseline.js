@@ -1,3 +1,4 @@
+const fs = require("fs");
 const {
   coefficientOfVariation,
   daterangeWeeks,
@@ -33,6 +34,18 @@ function normalizeSport(value) {
     return "bike";
   if (["swim", "swimming", "openwaterswim"].includes(lowered)) return "swim";
   return null;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function fileExists(path) {
+  try {
+    return fs.existsSync(path);
+  } catch (error) {
+    return false;
+  }
 }
 
 function activityDate(activity) {
@@ -97,6 +110,11 @@ function activityAverageHeartRate(activity) {
   return null;
 }
 
+function activityDeviceWatts(activity) {
+  if ("device_watts" in activity && activity.device_watts != null) return Boolean(activity.device_watts);
+  return null;
+}
+
 function dateRange(activities) {
   let min = null;
   let max = null;
@@ -113,6 +131,20 @@ function daysSinceLastActivity(activities, discipline, endDate) {
   let last = null;
   for (const activity of activities) {
     if (normalizeSport(activity.sport_type || activity.type) !== discipline) continue;
+    const dt = activityDate(activity);
+    if (!dt) continue;
+    if (!last || dt > last) last = dt;
+  }
+  if (!last) return null;
+  const diffMs = endDate.getTime() - last.getTime();
+  return Math.max(Math.round(diffMs / 86400000), 0);
+}
+
+function daysSinceLastAny(activities, endDate) {
+  let last = null;
+  for (const activity of activities) {
+    const discipline = normalizeSport(activity.sport_type || activity.type);
+    if (!discipline) continue;
     const dt = activityDate(activity);
     if (!dt) continue;
     if (!last || dt > last) last = dt;
@@ -162,9 +194,10 @@ function weeklyBuckets(activities, startDate, endDate) {
   return { weeks, weekMap };
 }
 
-function disciplineMetrics(activities, startDate, endDate, discipline) {
+function disciplineMetrics(activities, startDate, endDate, discipline, athleteMeta = null) {
   const { weeks, weekMap } = weeklyBuckets(activities, startDate, endDate);
   const weeklyVolumes = [];
+  const weeklyDistanceKm = [];
   const weeklySessions = [];
   const weeklyMaxSessions = [];
   const weeklyElevationGains = [];
@@ -177,8 +210,15 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
   const speedDistanceWeights = [];
   const powerSamples = [];
   const powerDurationWeights = [];
+  const powerWkgSamples = [];
+  const powerWkgDurationWeights = [];
   const heartRateSamples = [];
   const heartRateDurationWeights = [];
+  let totalActivities = 0;
+  let paceSpeedSampleCount = 0;
+  let hrSampleCount = 0;
+  let powerSampleCount = 0;
+  let devicePowerSampleCount = 0;
 
   for (const wk of weeks) {
     const weekActs = (weekMap.get(wk.toISOString()) || []).filter(
@@ -187,9 +227,11 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
     weeklySessions.push(weekActs.length);
 
     const volumes = [];
+    const distancesKm = [];
     const elevationGains = [];
     let maxSessionVal = 0;
     for (const act of weekActs) {
+      totalActivities += 1;
       const distM = activityDistanceM(act) || 0;
       const durSec = activityDurationSec(act) || 0;
       const elevationGainM = Number(act.total_elevation_gain_m || act.total_elevation_gain || 0) || 0;
@@ -197,6 +239,7 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
       if (discipline === "bike") {
         volume = durSec / 3600;
         maxSessionVal = Math.max(maxSessionVal, volume);
+        if (distM) distancesKm.push(distM / 1000);
       } else {
         volume = distM / 1000;
         maxSessionVal = Math.max(maxSessionVal, volume);
@@ -214,11 +257,13 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
         if (distM && pace && distM >= 1000 && pace >= 180 && pace <= 900) {
           paceSamples.push(pace);
           paceDistanceWeights.push(distM);
+          paceSpeedSampleCount += 1;
         }
         const hr = activityAverageHeartRate(act);
         if (durSec && hr && hr >= 60 && hr <= 220) {
           heartRateSamples.push(hr);
           heartRateDurationWeights.push(durSec);
+          hrSampleCount += 1;
         }
       }
 
@@ -227,20 +272,39 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
         if (durSec && speed && durSec >= 900 && speed >= 5 && speed <= 60) {
           speedSamples.push(speed);
           speedDistanceWeights.push(distM || 0);
+          paceSpeedSampleCount += 1;
         }
         const watts = activityAverageWatts(act);
         if (durSec && watts && durSec >= 600 && watts > 0 && watts <= 800) {
           powerSamples.push(watts);
           powerDurationWeights.push(durSec);
+          powerSampleCount += 1;
+          const deviceWatts = activityDeviceWatts(act);
+          if (deviceWatts) devicePowerSampleCount += 1;
+          if (athleteMeta && athleteMeta.weight_kg) {
+            powerWkgSamples.push(watts / athleteMeta.weight_kg);
+            powerWkgDurationWeights.push(durSec);
+          }
         }
         const hr = activityAverageHeartRate(act);
         if (durSec && hr && hr >= 60 && hr <= 220) {
           heartRateSamples.push(hr);
           heartRateDurationWeights.push(durSec);
+          hrSampleCount += 1;
+        }
+      }
+
+      if (discipline === "swim") {
+        const pace = activityPaceSecPer100m(act);
+        if (distM && pace && distM >= 200 && pace >= 40 && pace <= 300) {
+          paceSamples.push(pace);
+          paceDistanceWeights.push(distM);
+          paceSpeedSampleCount += 1;
         }
       }
     }
     weeklyVolumes.push(volumes.reduce((sum, v) => sum + v, 0));
+    weeklyDistanceKm.push(distancesKm.reduce((sum, v) => sum + v, 0));
     weeklyMaxSessions.push(maxSessionVal);
     if (discipline === "bike") {
       weeklyElevationGains.push(elevationGains.reduce((sum, v) => sum + v, 0));
@@ -252,9 +316,8 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
   const volumeCv = coefficientOfVariation(weeklyVolumes);
 
   let confidence = "high";
-  if (totalSessions < 6 || zeroWeeks > 2) confidence = "low";
-  else if (zeroWeeks > 1 || volumeCv > 0.4) confidence = "medium";
-  if (volumeCv > 0.6) confidence = "low";
+  if (totalSessions < 6 || zeroWeeks >= 3 || volumeCv > 0.6) confidence = "low";
+  else if (totalSessions < 8 || zeroWeeks >= 2 || volumeCv > 0.4) confidence = "medium";
 
   const units = {
     volume: discipline === "bike" ? "hours" : "km",
@@ -302,6 +365,18 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
       median_watts: Number(median(powerSamples).toFixed(1)),
       sample_count: powerSamples.length,
     };
+    if (powerWkgSamples.length) {
+      const powerWkgWeightedSum = powerWkgSamples.reduce(
+        (sum, v, i) => sum + v * (powerWkgDurationWeights[i] || 0),
+        0
+      );
+      const powerWkgWeightTotal = powerWkgDurationWeights.reduce((sum, v) => sum + v, 0);
+      intensity.power_wkg = {
+        duration_weighted_wkg: Number((powerWkgWeightTotal ? powerWkgWeightedSum / powerWkgWeightTotal : 0).toFixed(3)),
+        median_wkg: Number(median(powerWkgSamples).toFixed(3)),
+        sample_count: powerWkgSamples.length,
+      };
+    }
     const hrWeightedSum = heartRateSamples.reduce(
       (sum, v, i) => sum + v * (heartRateDurationWeights[i] || 0),
       0
@@ -314,6 +389,18 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
     };
   }
 
+  const coverage = {
+    total_activities: totalActivities,
+    pace_or_speed_coverage_fraction: totalActivities ? Number((paceSpeedSampleCount / totalActivities).toFixed(2)) : 0,
+    hr_fraction: totalActivities ? Number((hrSampleCount / totalActivities).toFixed(2)) : 0,
+  };
+  if (discipline === "bike") {
+    coverage.power_fraction = totalActivities ? Number((powerSampleCount / totalActivities).toFixed(2)) : 0;
+    coverage.device_watts_fraction = powerSampleCount
+      ? Number((devicePowerSampleCount / powerSampleCount).toFixed(2))
+      : 0;
+  }
+
   return {
     units,
     weekly: {
@@ -324,6 +411,8 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
       volume_cv: Number(volumeCv.toFixed(3)),
       weeks_tracked: weeklyVolumes.length,
       elevation_gain_median: discipline === "bike" ? median(weeklyElevationGains) : 0,
+      distance_km_median: discipline === "bike" ? median(weeklyDistanceKm) : 0,
+      distance_km_iqr: discipline === "bike" ? iqr(weeklyDistanceKm) : [0, 0],
     },
     session: {
       distance_median: median(sessionDistances),
@@ -335,6 +424,7 @@ function disciplineMetrics(activities, startDate, endDate, discipline) {
       weekly_max_median: median(weeklyMaxSessions),
     },
     intensity,
+    coverage,
     confidence,
   };
 }
@@ -461,6 +551,8 @@ function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
     input: "data/strava_activities.json",
+    athlete: "data/strava_athlete.json",
+    profile: "profile.json",
     windowDays: 56,
     shortWindow: 14,
     longWindow: 112,
@@ -471,6 +563,8 @@ function parseArgs() {
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === "--input") options.input = args[i + 1];
+    if (arg === "--athlete") options.athlete = args[i + 1];
+    if (arg === "--profile") options.profile = args[i + 1];
     if (arg === "--window-days") options.windowDays = Number(args[i + 1]);
     if (arg === "--short-window") options.shortWindow = Number(args[i + 1]);
     if (arg === "--long-window") options.longWindow = Number(args[i + 1]);
@@ -487,6 +581,250 @@ function selectRecentOrHistorical(recentMetric, historicalMetric, minSamples = 3
   if (recentMetric.sample_count >= minSamples) return recentMetric;
   if (gapDays != null && gapDays <= 28 && recentMetric.sample_count > 0) return recentMetric;
   return historicalMetric;
+}
+
+function loadAthleteMeta(options) {
+  let sex = null;
+  let weightKg = null;
+  let source = null;
+
+  if (options.athlete && fileExists(options.athlete)) {
+    const athlete = loadJson(options.athlete);
+    if (athlete && typeof athlete === "object") {
+      sex = athlete.sex || sex;
+      if (athlete.weight != null) weightKg = Number(athlete.weight);
+      source = "strava_athlete";
+    }
+  }
+
+  if ((sex == null || weightKg == null) && options.profile && fileExists(options.profile)) {
+    const profile = loadJson(options.profile);
+    const athlete = (profile || {}).athlete || {};
+    if (sex == null && athlete.sex) sex = athlete.sex;
+    if (weightKg == null && athlete.weight_kg != null) weightKg = Number(athlete.weight_kg);
+    if (source == null) source = "profile";
+  }
+
+  if (!Number.isFinite(weightKg)) weightKg = null;
+
+  return {
+    sex: sex || null,
+    weight_kg: weightKg,
+    has_weight: Number.isFinite(weightKg),
+    source,
+  };
+}
+
+function intensityRatio(activity, discipline, baseline, athleteMeta) {
+  if (!baseline) return 1;
+  if (discipline === "run") {
+    const obs = activityPaceSecPerKm(activity);
+    const ref = baseline.pace ? baseline.pace.median_sec_per_km : 0;
+    if (!obs || !ref) return 1;
+    return clamp(ref / obs, 0.7, 1.3);
+  }
+  if (discipline === "swim") {
+    const obs = activityPaceSecPer100m(activity);
+    const ref = baseline.pace ? baseline.pace.median_sec_per_100m : 0;
+    if (!obs || !ref) return 1;
+    return clamp(ref / obs, 0.7, 1.3);
+  }
+  if (discipline === "bike") {
+    const watts = activityAverageWatts(activity);
+    const speed = activitySpeedKmh(activity);
+    const wkg = watts && athleteMeta && athleteMeta.weight_kg ? watts / athleteMeta.weight_kg : null;
+    const refWkg = baseline.intensity && baseline.intensity.power_wkg ? baseline.intensity.power_wkg.median_wkg : 0;
+    const refW = baseline.intensity && baseline.intensity.power ? baseline.intensity.power.median_watts : 0;
+    const refSpeed = baseline.intensity && baseline.intensity.speed ? baseline.intensity.speed.median_kmh : 0;
+    if (wkg && refWkg) return clamp(wkg / refWkg, 0.7, 1.3);
+    if (watts && refW) return clamp(watts / refW, 0.7, 1.3);
+    if (speed && refSpeed) return clamp(speed / refSpeed, 0.7, 1.3);
+    return 1;
+  }
+  return 1;
+}
+
+function computeComposite(primaryActs, primaryStart, endDate, baseline, athleteMeta) {
+  const { weeks, weekMap } = weeklyBuckets(primaryActs, primaryStart, endDate);
+  const totalHours = [];
+  const totalSessions = [];
+  const aerobicPoints = [];
+  const aerobicPointsBySport = { run: [], bike: [], swim: [] };
+  const runHours = [];
+  const runKm = [];
+  const runTimeShare = [];
+
+  for (const wk of weeks) {
+    const weekActs = (weekMap.get(wk.toISOString()) || []).filter(
+      (a) => normalizeSport(a.sport_type || a.type)
+    );
+    const weekBySport = { run: [], bike: [], swim: [] };
+    for (const act of weekActs) {
+      const discipline = normalizeSport(act.sport_type || act.type);
+      if (!discipline) continue;
+      weekBySport[discipline].push(act);
+    }
+
+    let weekTotalHours = 0;
+    let weekSessions = 0;
+    let weekAerobic = 0;
+    const weekAerobicBySport = { run: 0, bike: 0, swim: 0 };
+    let weekRunHours = 0;
+    let weekRunKm = 0;
+
+    for (const discipline of ["run", "bike", "swim"]) {
+      for (const act of weekBySport[discipline]) {
+        const durSec = activityDurationSec(act);
+        if (!durSec || durSec < 60) continue;
+        weekSessions += 1;
+        const durHours = durSec / 3600;
+        weekTotalHours += durHours;
+
+        if (discipline === "run") {
+          const distM = activityDistanceM(act);
+          if (distM) weekRunKm += distM / 1000;
+          weekRunHours += durHours;
+        }
+
+        const ratio = intensityRatio(act, discipline, baseline.disciplines[discipline], athleteMeta);
+        const points = durHours * Math.pow(ratio, 2);
+        weekAerobic += points;
+        weekAerobicBySport[discipline] += points;
+      }
+    }
+
+    totalHours.push(weekTotalHours);
+    totalSessions.push(weekSessions);
+    aerobicPoints.push(weekAerobic);
+    aerobicPointsBySport.run.push(weekAerobicBySport.run);
+    aerobicPointsBySport.bike.push(weekAerobicBySport.bike);
+    aerobicPointsBySport.swim.push(weekAerobicBySport.swim);
+    runHours.push(weekRunHours);
+    runKm.push(weekRunKm);
+    runTimeShare.push(weekTotalHours ? weekRunHours / weekTotalHours : 0);
+  }
+
+  const composite = {
+    weekly: {
+      total_endurance_hours_median: Number(median(totalHours).toFixed(2)),
+      total_endurance_hours_iqr: iqr(totalHours),
+      total_endurance_hours_cv: Number(coefficientOfVariation(totalHours).toFixed(3)),
+      total_sessions_median: Number(median(totalSessions).toFixed(2)),
+      total_sessions_iqr: iqr(totalSessions),
+      total_sessions_cv: Number(coefficientOfVariation(totalSessions).toFixed(3)),
+      aerobic_points_median: Number(median(aerobicPoints).toFixed(2)),
+      aerobic_points_iqr: iqr(aerobicPoints),
+      aerobic_points_cv: Number(coefficientOfVariation(aerobicPoints).toFixed(3)),
+    },
+    by_sport: {
+      weekly_aerobic_points_median: {
+        run: Number(median(aerobicPointsBySport.run).toFixed(2)),
+        bike: Number(median(aerobicPointsBySport.bike).toFixed(2)),
+        swim: Number(median(aerobicPointsBySport.swim).toFixed(2)),
+      },
+    },
+    impact: {
+      weekly_run_km_median: Number(median(runKm).toFixed(2)),
+      weekly_run_hours_median: Number(median(runHours).toFixed(2)),
+      run_time_share_median: Number(median(runTimeShare).toFixed(3)),
+    },
+    flags: {},
+  };
+
+  const highCardioLowImpact =
+    composite.weekly.total_endurance_hours_median >= 6 &&
+    composite.impact.run_time_share_median <= 0.15 &&
+    composite.impact.weekly_run_km_median <= 12;
+  composite.flags.high_cardio_low_impact = Boolean(highCardioLowImpact);
+
+  return composite;
+}
+
+function computeRestartCaps(baseline, gapDaysAny) {
+  const factors = {
+    run: [1.0, 0.6, 0.4, 0.25, 0.15],
+    bike: [1.0, 0.7, 0.5, 0.35, 0.2],
+    swim: [1.0, 0.8, 0.6, 0.4, 0.25],
+  };
+  let level = 0;
+  if (gapDaysAny == null) level = 4;
+  else if (gapDaysAny <= 14) level = 0;
+  else if (gapDaysAny <= 28) level = 1;
+  else if (gapDaysAny <= 56) level = 2;
+  else if (gapDaysAny <= 112) level = 3;
+  else level = 4;
+
+  const restart = {
+    gap_days_any: gapDaysAny,
+    reentry_level: level,
+    week1: {},
+    week2: {},
+  };
+
+  for (const discipline of ["run", "bike", "swim"]) {
+    const metrics = baseline.disciplines[discipline];
+    const factor = factors[discipline][level];
+    const confidence = metrics.confidence;
+    const confFactor = confidence === "low" ? 0.85 : 1.0;
+    const weekly = metrics.weekly.volume_median || 0;
+    const long = metrics.long_session.weekly_max_median || 0;
+    const week1Volume = weekly * factor * confFactor;
+    const week1Long = long * factor * confFactor;
+    const week2Volume = Math.min(weekly, week1Volume * 1.2);
+    const week2Long = Math.min(long, week1Long * 1.15);
+    restart.week1[discipline] = {
+      volume_cap: Number(week1Volume.toFixed(2)),
+      long_cap: Number(week1Long.toFixed(2)),
+    };
+    restart.week2[discipline] = {
+      volume_cap: Number(week2Volume.toFixed(2)),
+      long_cap: Number(week2Long.toFixed(2)),
+    };
+  }
+  return restart;
+}
+
+function computeTransfer(baseline, composite) {
+  const transfer = {
+    run_easy_pace_sec_per_km_range: null,
+    run_easy_pace_reason: null,
+    run_intro_weekly_time_min_range: null,
+    transfer_confidence: null,
+  };
+  const runPace = baseline.disciplines.run.pace || {};
+  const sampleCount = runPace.sample_count || 0;
+  const medianPace = runPace.median_sec_per_km || 0;
+  const runConfidence = baseline.disciplines.run.confidence;
+  if (sampleCount >= 10 && medianPace) {
+    transfer.run_easy_pace_sec_per_km_range = [
+      Number((medianPace * 1.05).toFixed(1)),
+      Number((medianPace * 1.25).toFixed(1)),
+    ];
+  } else if (sampleCount >= 3 && medianPace) {
+    transfer.run_easy_pace_sec_per_km_range = [
+      Number((medianPace * 1.1).toFixed(1)),
+      Number((medianPace * 1.35).toFixed(1)),
+    ];
+    transfer.run_easy_pace_reason = "limited_samples";
+  } else if (runConfidence === "low" && medianPace) {
+    transfer.run_easy_pace_sec_per_km_range = [
+      Number((medianPace * 1.1).toFixed(1)),
+      Number((medianPace * 1.35).toFixed(1)),
+    ];
+    transfer.run_easy_pace_reason = "low_confidence";
+  } else {
+    transfer.run_easy_pace_reason = "insufficient_run_pace_samples";
+  }
+
+  if (composite.flags.high_cardio_low_impact) {
+    const hours = composite.weekly.total_endurance_hours_median || 0;
+    let range = [30, 60];
+    if (hours >= 10) range = [60, 100];
+    else if (hours >= 6) range = [45, 90];
+    transfer.run_intro_weekly_time_min_range = range;
+    transfer.transfer_confidence = "low";
+  }
+  return transfer;
 }
 
 function main() {
@@ -527,6 +865,7 @@ function main() {
     options.longWindow
   );
 
+  const athleteMeta = loadAthleteMeta(options);
   const baseline = {
     generated_at: toIsoDate(new Date()),
     windows: {
@@ -543,19 +882,22 @@ function main() {
       recent_window_days: options.windowDays,
       note: "Recent 56 days weighted more heavily; historical data retained to avoid false zero baselines.",
     },
+    athlete_meta: athleteMeta,
     disciplines: {},
     context: {},
   };
 
   const metricsByDiscipline = {};
   for (const discipline of ["run", "bike", "swim"]) {
-    const recentMetrics = disciplineMetrics(primaryActs, primaryStart, endDate, discipline);
+    const recentMetrics = disciplineMetrics(primaryActs, primaryStart, endDate, discipline, athleteMeta);
     const historySource = historicalActs.length ? historicalActs : activities;
     const historyStart = historicalStart || allStart;
     const historyEnd = historicalEnd || endDate;
-    const historicalMetrics = disciplineMetrics(historySource, historyStart, historyEnd, discipline);
+    const historicalMetrics = disciplineMetrics(historySource, historyStart, historyEnd, discipline, athleteMeta);
     const gapDays = daysSinceLastActivity(activities, discipline, endDate);
     baseline.disciplines[discipline] = blendMetrics(recentMetrics, historicalMetrics, gapDays);
+    baseline.disciplines[discipline].gap_days_discipline = gapDays;
+    baseline.disciplines[discipline].coverage = recentMetrics.coverage;
     metricsByDiscipline[discipline] = { recentMetrics, historicalMetrics, gapDays };
     if (gapDays != null) {
       if (gapDays > 42) baseline.disciplines[discipline].confidence = "low";
@@ -582,6 +924,9 @@ function main() {
   const bikeGapDays = metricsByDiscipline.bike.gapDays;
   baseline.disciplines.bike.speed = selectRecentOrHistorical(recentBikeSpeed, historicalBikeSpeed, 3, bikeGapDays);
   baseline.disciplines.bike.power = selectRecentOrHistorical(recentBikePower, historicalBikePower, 3, bikeGapDays);
+  if (baseline.disciplines.bike.intensity && baseline.disciplines.bike.intensity.power_wkg) {
+    baseline.disciplines.bike.power_wkg = baseline.disciplines.bike.intensity.power_wkg;
+  }
   baseline.context.short_window = {
     start: toIsoDate(shortStart),
     end: toIsoDate(endDate),
@@ -593,6 +938,11 @@ function main() {
     activity_count: longActs.length,
   };
 
+  baseline.composite = computeComposite(primaryActs, primaryStart, endDate, baseline, athleteMeta);
+  const gapDaysAny = daysSinceLastAny(activities, endDate);
+  baseline.restart = computeRestartCaps(baseline, gapDaysAny);
+  baseline.transfer = computeTransfer(baseline, baseline.composite);
+
   dumpJson(options.outputJson, baseline);
 
   const mdLines = [
@@ -601,12 +951,30 @@ function main() {
     `Window: ${baseline.windows.primary_start} to ${baseline.windows.primary_end}`,
     "",
   ];
+  mdLines.push("## Athlete");
+  mdLines.push(`- Sex: ${baseline.athlete_meta.sex || "unknown"}`);
+  mdLines.push(
+    `- Weight: ${baseline.athlete_meta.has_weight ? baseline.athlete_meta.weight_kg + " kg" : "unknown"}`
+  );
+  mdLines.push("");
   for (const [discipline, metrics] of Object.entries(baseline.disciplines)) {
     mdLines.push(`## ${discipline.charAt(0).toUpperCase() + discipline.slice(1)}`);
     mdLines.push(`- Confidence: ${metrics.confidence}`);
     mdLines.push(`- Weekly volume median: ${metrics.weekly.volume_median} ${metrics.units.volume}`);
+    if (discipline === "bike") {
+      mdLines.push(`- Weekly distance median: ${metrics.weekly.distance_km_median || 0} km`);
+    }
     mdLines.push(`- Weekly sessions median: ${metrics.weekly.sessions_median}`);
     mdLines.push(`- Long session median: ${metrics.long_session.weekly_max_median} ${metrics.units.long_session}`);
+    mdLines.push(`- Gap days: ${metrics.gap_days_discipline == null ? "unknown" : metrics.gap_days_discipline}`);
+    if (metrics.coverage) {
+      mdLines.push(`- Coverage (pace/speed): ${metrics.coverage.pace_or_speed_coverage_fraction || 0}`);
+      mdLines.push(`- Coverage (HR): ${metrics.coverage.hr_fraction || 0}`);
+      if (discipline === "bike") {
+        mdLines.push(`- Coverage (power): ${metrics.coverage.power_fraction || 0}`);
+        mdLines.push(`- Coverage (device watts): ${metrics.coverage.device_watts_fraction || 0}`);
+      }
+    }
     mdLines.push("");
     if (discipline === "swim") {
       const pace = metrics.pace || {};
@@ -633,8 +1001,55 @@ function main() {
       mdLines.push(`- Power (weighted): ${power.duration_weighted_watts || 0} W`);
       mdLines.push(`- Power (median): ${power.median_watts || 0} W`);
       mdLines.push(`- Power samples: ${power.sample_count || 0}`);
+      if (metrics.power_wkg) {
+        mdLines.push(`- Power (W/kg, weighted): ${metrics.power_wkg.duration_weighted_wkg || 0}`);
+        mdLines.push(`- Power (W/kg, median): ${metrics.power_wkg.median_wkg || 0}`);
+        mdLines.push(`- Power (W/kg) samples: ${metrics.power_wkg.sample_count || 0}`);
+      }
       mdLines.push("");
     }
+  }
+
+  mdLines.push("## Composite");
+  mdLines.push(`- Total endurance hours (median): ${baseline.composite.weekly.total_endurance_hours_median}`);
+  mdLines.push(`- Total sessions (median): ${baseline.composite.weekly.total_sessions_median}`);
+  mdLines.push(`- Aerobic points (median): ${baseline.composite.weekly.aerobic_points_median}`);
+  mdLines.push(`- Run time share (median): ${baseline.composite.impact.run_time_share_median}`);
+  mdLines.push(
+    `- Flag high_cardio_low_impact: ${baseline.composite.flags.high_cardio_low_impact ? "yes" : "no"}`
+  );
+  mdLines.push("");
+
+  if (baseline.restart) {
+    mdLines.push("## Restart Caps");
+    mdLines.push(`- Gap days any: ${baseline.restart.gap_days_any == null ? "unknown" : baseline.restart.gap_days_any}`);
+    mdLines.push(`- Reentry level: ${baseline.restart.reentry_level}`);
+    for (const discipline of ["run", "bike", "swim"]) {
+      const w1 = baseline.restart.week1[discipline];
+      const w2 = baseline.restart.week2[discipline];
+      mdLines.push(
+        `- ${discipline} week1 cap: ${w1.volume_cap} (${baseline.disciplines[discipline].units.volume}), long ${w1.long_cap}`
+      );
+      mdLines.push(
+        `- ${discipline} week2 cap: ${w2.volume_cap} (${baseline.disciplines[discipline].units.volume}), long ${w2.long_cap}`
+      );
+    }
+    mdLines.push("");
+  }
+
+  if (baseline.transfer) {
+    mdLines.push("## Transfer");
+    if (baseline.transfer.run_easy_pace_sec_per_km_range) {
+      const range = baseline.transfer.run_easy_pace_sec_per_km_range;
+      mdLines.push(`- Run easy pace range: ${range[0]}–${range[1]} sec/km`);
+    } else {
+      mdLines.push(`- Run easy pace range: unavailable (${baseline.transfer.run_easy_pace_reason || "n/a"})`);
+    }
+    if (baseline.transfer.run_intro_weekly_time_min_range) {
+      const range = baseline.transfer.run_intro_weekly_time_min_range;
+      mdLines.push(`- Run intro weekly time: ${range[0]}–${range[1]} min`);
+    }
+    mdLines.push("");
   }
 
   saveText(options.outputMd, mdLines.join("\n").trim() + "\n");

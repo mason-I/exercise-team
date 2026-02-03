@@ -1,0 +1,61 @@
+{
+  "week_start": "2026-02-02",
+  "phase": "offseason",
+  "targets": {
+    "run": {
+      "sessions": 1,
+      "volume_km": 3.26,
+      "long_km": 1.31
+    },
+    "bike": {
+      "sessions": 3,
+      "volume_hours": 4.19,
+      "long_hours": 1.68
+    },
+    "swim": {
+      "sessions": 1,
+      "volume_km": 0,
+      "long_km": 0
+    }
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  },
+  "sessions": [
+    {
+      "date": "2026-02-02",
+      "discipline": "swim",
+      "type": "long",
+      "distance_km": 0,
+      "duration_min": 0
+    },
+    {
+      "date": "2026-02-04",
+      "discipline": "bike",
+      "type": "easy",
+      "duration_min": 75.3
+    },
+    {
+      "date": "2026-02-08",
+      "discipline": "bike",
+      "type": "easy",
+      "duration_min": 75.3
+    },
+    {
+      "date": "2026-02-04",
+      "discipline": "bike",
+      "type": "long",
+      "duration_min": 100.8
+    },
+    {
+      "date": "2026-02-03",
+      "discipline": "run",
+      "type": "long",
+      "distance_km": 1.31,
+      "duration_min": 7.4
+    }
+  ],
+  "notes": [],
+  "flags": []
+}

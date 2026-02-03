@@ -9,6 +9,12 @@
     "activity_count": 0,
     "window_activity_count": 0
   },
+  "athlete_meta": {
+    "sex": null,
+    "weight_kg": null,
+    "has_weight": false,
+    "source": null
+  },
   "disciplines": {
     "run": {
       "units": {
@@ -36,6 +42,12 @@
       "long_session": {
         "weekly_max_median": 0
       },
+      "coverage": {
+        "total_activities": 0,
+        "pace_or_speed_coverage_fraction": 0,
+        "hr_fraction": 0
+      },
+      "gap_days_discipline": 0,
       "confidence": "low"
     },
     "bike": {
@@ -54,7 +66,12 @@
         ],
         "zero_weeks": 0,
         "volume_cv": 0,
-        "weeks_tracked": 0
+        "weeks_tracked": 0,
+        "distance_km_median": 0,
+        "distance_km_iqr": [
+          0,
+          0
+        ]
       },
       "session": {
         "distance_median": 0,
@@ -64,6 +81,14 @@
       "long_session": {
         "weekly_max_median": 0
       },
+      "coverage": {
+        "total_activities": 0,
+        "pace_or_speed_coverage_fraction": 0,
+        "hr_fraction": 0,
+        "power_fraction": 0,
+        "device_watts_fraction": 0
+      },
+      "gap_days_discipline": 0,
       "confidence": "low"
     },
     "swim": {
@@ -97,8 +122,89 @@
         "median_sec_per_100m": 0,
         "sample_count": 0
       },
+      "coverage": {
+        "total_activities": 0,
+        "pace_or_speed_coverage_fraction": 0,
+        "hr_fraction": 0
+      },
+      "gap_days_discipline": 0,
       "confidence": "low"
     }
+  },
+  "composite": {
+    "weekly": {
+      "total_endurance_hours_median": 0,
+      "total_endurance_hours_iqr": [
+        0,
+        0
+      ],
+      "total_endurance_hours_cv": 0,
+      "total_sessions_median": 0,
+      "total_sessions_iqr": [
+        0,
+        0
+      ],
+      "total_sessions_cv": 0,
+      "aerobic_points_median": 0,
+      "aerobic_points_iqr": [
+        0,
+        0
+      ],
+      "aerobic_points_cv": 0
+    },
+    "by_sport": {
+      "weekly_aerobic_points_median": {
+        "run": 0,
+        "bike": 0,
+        "swim": 0
+      }
+    },
+    "impact": {
+      "weekly_run_km_median": 0,
+      "weekly_run_hours_median": 0,
+      "run_time_share_median": 0
+    },
+    "flags": {
+      "high_cardio_low_impact": false
+    }
+  },
+  "restart": {
+    "gap_days_any": 0,
+    "reentry_level": 0,
+    "week1": {
+      "run": {
+        "volume_cap": 0,
+        "long_cap": 0
+      },
+      "bike": {
+        "volume_cap": 0,
+        "long_cap": 0
+      },
+      "swim": {
+        "volume_cap": 0,
+        "long_cap": 0
+      }
+    },
+    "week2": {
+      "run": {
+        "volume_cap": 0,
+        "long_cap": 0
+      },
+      "bike": {
+        "volume_cap": 0,
+        "long_cap": 0
+      },
+      "swim": {
+        "volume_cap": 0,
+        "long_cap": 0
+      }
+    }
+  },
+  "transfer": {
+    "run_easy_pace_sec_per_km_range": null,
+    "run_easy_pace_reason": null,
+    "run_intro_weekly_time_min_range": null,
+    "transfer_confidence": null
   },
   "context_windows": {
     "short_window": {

@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-02-03",
+  "event": {
+    "date": "2027-10-18",
+    "race_type": "full",
+    "race_label": "Full Ironman"
+  },
+  "planning": {
+    "start_date": "2027-04-19",
+    "end_date": "2027-10-18",
+    "week_start": "monday",
+    "total_weeks": 26
+  },
+  "phases": [
+    {
+      "name": "base",
+      "start": "2027-04-19",
+      "end": "2027-07-11",
+      "weeks": 12
+    },
+    {
+      "name": "build",
+      "start": "2027-07-12",
+      "end": "2027-09-05",
+      "weeks": 8
+    },
+    {
+      "name": "peak",
+      "start": "2027-09-06",
+      "end": "2027-09-26",
+      "weeks": 3
+    },
+    {
+      "name": "taper",
+      "start": "2027-09-27",
+      "end": "2027-10-17",
+      "weeks": 3
+    }
+  ],
+  "warnings": [
+    "Training start date is in the future. Consider a later start if desired."
+  ]
+}

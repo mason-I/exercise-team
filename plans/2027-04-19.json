@@ -1,0 +1,61 @@
+{
+  "week_start": "2027-04-19",
+  "phase": "base",
+  "targets": {
+    "run": {
+      "sessions": 1,
+      "volume_km": 5.44,
+      "long_km": 2.18
+    },
+    "bike": {
+      "sessions": 3,
+      "volume_hours": 6.98,
+      "long_hours": 2.79
+    },
+    "swim": {
+      "sessions": 1,
+      "volume_km": 0,
+      "long_km": 0
+    }
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  },
+  "sessions": [
+    {
+      "date": "2027-04-19",
+      "discipline": "swim",
+      "type": "long",
+      "distance_km": 0,
+      "duration_min": 0
+    },
+    {
+      "date": "2027-04-21",
+      "discipline": "bike",
+      "type": "easy",
+      "duration_min": 125.7
+    },
+    {
+      "date": "2027-04-25",
+      "discipline": "bike",
+      "type": "long",
+      "duration_min": 167.4
+    },
+    {
+      "date": "2027-04-21",
+      "discipline": "bike",
+      "type": "long",
+      "duration_min": 167.4
+    },
+    {
+      "date": "2027-04-20",
+      "discipline": "run",
+      "type": "long",
+      "distance_km": 2.18,
+      "duration_min": 12.2
+    }
+  ],
+  "notes": [],
+  "flags": []
+}
