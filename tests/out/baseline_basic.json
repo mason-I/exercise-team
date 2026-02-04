@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-02-03",
+  "generated_at": "2026-02-04",
   "windows": {
     "short_days": 14,
     "primary_days": 56,
     "long_days": 112,
     "all_start": "2026-01-25",
     "all_end": "2026-02-03",
-    "primary_start": "2025-12-10",
-    "primary_end": "2026-02-03"
+    "primary_start": "2025-12-11",
+    "primary_end": "2026-02-04"
   },
   "weighting": {
     "mode": "recent_weighted",
@@ -150,7 +150,7 @@
       },
       "confidence": "low",
       "history": {
-        "gap_days": 2,
+        "gap_days": 3,
         "recent": {
           "weekly": {
             "sessions_median": 0,
@@ -232,7 +232,7 @@
           }
         }
       },
-      "gap_days_discipline": 2,
+      "gap_days_discipline": 3,
       "pace": {
         "distance_weighted_sec_per_km": 322.22,
         "median_sec_per_km": 325,
@@ -252,8 +252,8 @@
         "weekly_cv": 1.913,
         "weeks_tracked": 9,
         "ctl_end": 0.02,
-        "atl_end": 0.07,
-        "tsb_end": -0.05,
+        "atl_end": 0.06,
+        "tsb_end": -0.04,
         "method_coverage": {
           "hours_power": 0,
           "hours_pace": 1,
@@ -334,7 +334,7 @@
       },
       "confidence": "low",
       "history": {
-        "gap_days": 1,
+        "gap_days": 2,
         "recent": {
           "weekly": {
             "sessions_median": 0,
@@ -436,7 +436,7 @@
           }
         }
       },
-      "gap_days_discipline": 1,
+      "gap_days_discipline": 2,
       "speed": {
         "distance_weighted_kmh": 19.14,
         "median_kmh": 19,
@@ -461,8 +461,8 @@
         "weekly_cv": 1.897,
         "weeks_tracked": 9,
         "ctl_end": 0.02,
-        "atl_end": 0.08,
-        "tsb_end": -0.06,
+        "atl_end": 0.07,
+        "tsb_end": -0.05,
         "method_coverage": {
           "hours_power": 1,
           "hours_pace": 0,
@@ -525,7 +525,7 @@
       },
       "confidence": "low",
       "history": {
-        "gap_days": 0,
+        "gap_days": 1,
         "recent": {
           "weekly": {
             "sessions_median": 0,
@@ -585,7 +585,7 @@
           "intensity": {}
         }
       },
-      "gap_days_discipline": 0,
+      "gap_days_discipline": 1,
       "pace": {
         "distance_weighted_sec_per_100m": 188.89,
         "median_sec_per_100m": 190,
@@ -605,8 +605,8 @@
         "weekly_cv": 1.902,
         "weeks_tracked": 9,
         "ctl_end": 0.02,
-        "atl_end": 0.09,
-        "tsb_end": -0.07,
+        "atl_end": 0.08,
+        "tsb_end": -0.06,
         "method_coverage": {
           "hours_power": 0,
           "hours_pace": 1,
@@ -620,13 +620,13 @@
   },
   "context": {
     "short_window": {
-      "start": "2026-01-21",
-      "end": "2026-02-03",
+      "start": "2026-01-22",
+      "end": "2026-02-04",
       "activity_count": 6
     },
     "long_window": {
-      "start": "2025-10-15",
-      "end": "2026-02-03",
+      "start": "2025-10-16",
+      "end": "2026-02-04",
       "activity_count": 6
     }
   },
@@ -668,7 +668,7 @@
     }
   },
   "restart": {
-    "gap_days_any": 0,
+    "gap_days_any": 1,
     "reentry_level": 0,
     "week1": {
       "run": {

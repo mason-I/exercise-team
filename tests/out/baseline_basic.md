@@ -1,6 +1,6 @@
 # Baseline Summary
 
-Window: 2025-12-10 to 2026-02-03
+Window: 2025-12-11 to 2026-02-04
 
 ## Athlete
 - Sex: M
@@ -18,14 +18,14 @@ Window: 2025-12-10 to 2026-02-03
 - Weekly volume median: 0.8 km
 - Weekly sessions median: 0.2
 - Long session median: 0.8 km
-- Gap days: 2
+- Gap days: 3
 - Coverage (pace/speed): 1
 - Coverage (HR): 1
 - Load points weekly median: 0
 - Load points weekly CV: 1.913
 - CTL end: 0.02
-- ATL end: 0.07
-- TSB end: -0.05
+- ATL end: 0.06
+- TSB end: -0.04
 - Load method coverage: power 0, pace 1, hr 0, assumed 0, assisted 0
 
 - Pace (weighted): 322.22 sec/km
@@ -39,7 +39,7 @@ Window: 2025-12-10 to 2026-02-03
 - Weekly distance median: 0 km
 - Weekly sessions median: 0.2
 - Long session median: 0.17 hours
-- Gap days: 1
+- Gap days: 2
 - Coverage (pace/speed): 1
 - Coverage (HR): 1
 - Coverage (power): 1
@@ -47,8 +47,8 @@ Window: 2025-12-10 to 2026-02-03
 - Load points weekly median: 0
 - Load points weekly CV: 1.897
 - CTL end: 0.02
-- ATL end: 0.08
-- TSB end: -0.06
+- ATL end: 0.07
+- TSB end: -0.05
 - Load method coverage: power 1, pace 0, hr 0, assumed 0, assisted 0
 
 - Speed (weighted): 19.14 km/h
@@ -74,14 +74,14 @@ Window: 2025-12-10 to 2026-02-03
 - Weekly volume median: 0.16 km
 - Weekly sessions median: 0.2
 - Long session median: 0.16 km
-- Gap days: 0
+- Gap days: 1
 - Coverage (pace/speed): 1
 - Coverage (HR): 0
 - Load points weekly median: 0
 - Load points weekly CV: 1.902
 - CTL end: 0.02
-- ATL end: 0.09
-- TSB end: -0.07
+- ATL end: 0.08
+- TSB end: -0.06
 - Load method coverage: power 0, pace 1, hr 0, assumed 0, assisted 0
 
 - Pace (weighted): 188.89 sec/100m
@@ -114,7 +114,7 @@ Window: 2025-12-10 to 2026-02-03
 - Segment efforts count: 0
 
 ## Restart Caps
-- Gap days any: 0
+- Gap days any: 1
 - Reentry level: 0
 - run week1 cap: 0.68 (km), long 0.68
 - run week2 cap: 0.8 (km), long 0.78

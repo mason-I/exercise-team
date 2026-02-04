@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-03",
+  "generated_at": "2026-02-04",
   "race": {
     "date": "2026-10-10",
     "race_type": "full",
@@ -25,8 +25,8 @@
       "run": {
         "weekly_load_points_median": 0,
         "ctl_end": 0.02,
-        "atl_end": 0.07,
-        "tsb_end": -0.05,
+        "atl_end": 0.06,
+        "tsb_end": -0.04,
         "confidence": "low",
         "method_coverage": {
           "hours_power": 0,
@@ -39,8 +39,8 @@
       "bike": {
         "weekly_load_points_median": 0,
         "ctl_end": 0.02,
-        "atl_end": 0.08,
-        "tsb_end": -0.06,
+        "atl_end": 0.07,
+        "tsb_end": -0.05,
         "confidence": "low",
         "method_coverage": {
           "hours_power": 1,
@@ -53,8 +53,8 @@
       "swim": {
         "weekly_load_points_median": 0,
         "ctl_end": 0.02,
-        "atl_end": 0.09,
-        "tsb_end": -0.07,
+        "atl_end": 0.08,
+        "tsb_end": -0.06,
         "confidence": "low",
         "method_coverage": {
           "hours_power": 0,
@@ -68,8 +68,8 @@
     "overall": {
       "weekly_load_points_median": 0,
       "ctl_end": 0.06,
-      "atl_end": 0.24,
-      "tsb_end": -0.18
+      "atl_end": 0.21,
+      "tsb_end": -0.15
     }
   },
   "targets": {

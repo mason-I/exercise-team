@@ -32,18 +32,18 @@ function validateCalendar(calendar) {
 }
 
 function restDayIndex(value) {
-  if (!value) return 6;
+  if (!value) return 0;
   const lowered = String(value).toLowerCase();
   const map = {
-    monday: 0,
-    tuesday: 1,
-    wednesday: 2,
-    thursday: 3,
-    friday: 4,
-    saturday: 5,
-    sunday: 6,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+    sunday: 0,
   };
-  return map[lowered] ?? 6;
+  return map[lowered] ?? 0;
 }
 
 function isTriGoal(profile) {
@@ -116,7 +116,8 @@ function validatePlan(plan, baseline, profile, prevPlan) {
       continue;
     }
     if (plannedVolume < 0) errors.push(`${discipline} planned volume negative`);
-    if (confidence === "low" && plannedVolume > baselineWeekly) {
+    const isSwimReentryException = discipline === "swim" && triGoal && swimBaselineZero;
+    if (confidence === "low" && plannedVolume > baselineWeekly && !isSwimReentryException) {
       errors.push(`${discipline} planned volume exceeds baseline for low confidence`);
     }
     const longKey = discipline === "bike" ? "long_hours" : "long_km";

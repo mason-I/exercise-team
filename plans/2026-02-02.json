@@ -4,18 +4,25 @@
   "targets": {
     "run": {
       "sessions": 1,
-      "volume_km": 3.26,
-      "long_km": 1.31
+      "volume_km": 4.08,
+      "long_km": 1.6,
+      "volume_min": 23,
+      "long_min": 9,
+      "load_points": 0
     },
     "bike": {
       "sessions": 3,
       "volume_hours": 4.19,
-      "long_hours": 1.68
+      "long_hours": 1.68,
+      "load_points": 0
     },
     "swim": {
-      "sessions": 1,
-      "volume_km": 0,
-      "long_km": 0
+      "sessions": 2,
+      "volume_km": 1.86,
+      "long_km": 0.74,
+      "volume_min": 40,
+      "long_min": 16,
+      "load_points": 0
     }
   },
   "nutrition": {
@@ -26,34 +33,88 @@
     {
       "date": "2026-02-02",
       "discipline": "swim",
+      "type": "technique",
+      "duration_min": 24,
+      "distance_km": 1.11,
+      "intensity": {
+        "effort_hint": "technique"
+      }
+    },
+    {
+      "date": "2026-02-05",
+      "discipline": "swim",
       "type": "long",
-      "distance_km": 0,
-      "duration_min": 0
-    },
-    {
-      "date": "2026-02-04",
-      "discipline": "bike",
-      "type": "easy",
-      "duration_min": 75.3
-    },
-    {
-      "date": "2026-02-08",
-      "discipline": "bike",
-      "type": "easy",
-      "duration_min": 75.3
-    },
-    {
-      "date": "2026-02-04",
-      "discipline": "bike",
-      "type": "long",
-      "duration_min": 100.8
+      "duration_min": 16,
+      "distance_km": 0.74,
+      "intensity": {
+        "effort_hint": "long"
+      }
     },
     {
       "date": "2026-02-03",
+      "discipline": "bike",
+      "type": "easy",
+      "duration_min": 75.3,
+      "intensity": {
+        "target_if_range": [
+          0.55,
+          0.7
+        ],
+        "zone_hint": "Z2",
+        "target_power_w_range": [
+          143.6,
+          223.3
+        ]
+      }
+    },
+    {
+      "date": "2026-02-05",
+      "discipline": "bike",
+      "type": "easy",
+      "duration_min": 75.3,
+      "intensity": {
+        "target_if_range": [
+          0.55,
+          0.7
+        ],
+        "zone_hint": "Z2",
+        "target_power_w_range": [
+          143.6,
+          223.3
+        ]
+      }
+    },
+    {
+      "date": "2026-02-07",
+      "discipline": "bike",
+      "type": "long",
+      "duration_min": 100.8,
+      "intensity": {
+        "target_if_range": [
+          0.65,
+          0.75
+        ],
+        "zone_hint": "Z2",
+        "target_power_w_range": [
+          169.7,
+          239.3
+        ]
+      }
+    },
+    {
+      "date": "2026-02-04",
       "discipline": "run",
       "type": "long",
-      "distance_km": 1.31,
-      "duration_min": 7.4
+      "duration_min": 9,
+      "distance_km": 1.6,
+      "distance_km_cap": 5.4,
+      "intensity": {
+        "effort_hint": "long",
+        "pace_sec_per_km_range": [
+          355.3,
+          423
+        ]
+      }
     }
   ],
   "notes": [],

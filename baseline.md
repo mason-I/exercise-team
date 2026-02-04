@@ -1,6 +1,6 @@
 # Baseline Summary
 
-Window: 2025-12-10 to 2026-02-03
+Window: 2025-12-11 to 2026-02-04
 
 ## Athlete
 - Sex: M
@@ -38,7 +38,7 @@ Window: 2025-12-10 to 2026-02-03
 - Weekly distance median: 0 km
 - Weekly sessions median: 0.1
 - Long session median: 0.1 hours
-- Gap days: 2
+- Gap days: 3
 - Coverage (pace/speed): 1
 - Coverage (HR): 0
 - Coverage (power): 0
@@ -106,7 +106,7 @@ Window: 2025-12-10 to 2026-02-03
 - Segment efforts count: 0
 
 ## Restart Caps
-- Gap days any: 2
+- Gap days any: 3
 - Reentry level: 0
 - run week1 cap: 0 (km), long 0
 - run week2 cap: 0 (km), long 0

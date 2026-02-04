@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-02-03",
+  "race": {
+    "date": "2027-10-18",
+    "race_type": "full",
+    "distances": {
+      "swim_km": 3.8,
+      "bike_km": 180,
+      "run_km": 42.2
+    }
+  },
+  "baseline_snapshot": {
+    "run_weekly_km": 6.4,
+    "bike_weekly_hours": 7.35,
+    "swim_weekly_km": 0,
+    "run_long_km": 4.2,
+    "bike_long_hours": 3.46,
+    "swim_long_km": 0,
+    "flags": {
+      "high_cardio_low_impact": true
+    }
+  },
+  "current_state": {
+    "by_sport": {
+      "run": {
+        "weekly_load_points_median": 0,
+        "ctl_end": 0,
+        "atl_end": 0,
+        "tsb_end": 0,
+        "confidence": "low",
+        "method_coverage": null
+      },
+      "bike": {
+        "weekly_load_points_median": 2.96,
+        "ctl_end": 0,
+        "atl_end": 0,
+        "tsb_end": 0,
+        "confidence": "medium",
+        "method_coverage": null
+      },
+      "swim": {
+        "weekly_load_points_median": 0,
+        "ctl_end": 0,
+        "atl_end": 0,
+        "tsb_end": 0,
+        "confidence": "low",
+        "method_coverage": null
+      }
+    },
+    "overall": {
+      "weekly_load_points_median": 2.96,
+      "ctl_end": 0,
+      "atl_end": 0,
+      "tsb_end": 0
+    }
+  },
+  "targets": {
+    "total_load_points_peak": 4.14,
+    "bike_load_points_peak": 2.28,
+    "run_load_points_peak": 1.24,
+    "swim_load_points_peak": 0.62,
+    "total_endurance_hours_peak": 8.85
+  },
+  "ramp_rules": {
+    "run": 0.05,
+    "bike": 0.1,
+    "swim": 0.15
+  },
+  "thresholds_used": {
+    "ftp_w": 290,
+    "ftp_quality": "medium",
+    "vthr_mps": null,
+    "vthr_quality": "unknown",
+    "lthr_bpm": null,
+    "lthr_quality": "unknown",
+    "css_sec_per_100m": null,
+    "css_quality": "unknown"
+  }
+}

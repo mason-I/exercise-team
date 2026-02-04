@@ -21,8 +21,68 @@
     "ftp_w": 290,
     "ftp_source": "strava_athlete",
     "ftp_quality": "medium",
+    "hr_max_bpm": 196,
+    "hr_max_source": "summary_max_heartrate",
+    "hr_max_quality": "high",
+    "hr_lthr_bpm": 176,
+    "hr_lthr_source": "derived_hrmax",
+    "hr_lthr_quality": "low",
     "summit": false,
     "source": "strava_athlete"
+  },
+  "load_model": {
+    "ewma_tau_days": {
+      "ctl": 42,
+      "atl": 7
+    },
+    "if_clamp": {
+      "bike": [
+        0.3,
+        1.3
+      ],
+      "run": [
+        0.5,
+        1.3
+      ],
+      "swim": [
+        0.5,
+        1.3
+      ],
+      "hr": [
+        0.6,
+        1.2
+      ]
+    },
+    "default_if": {
+      "bike": 0.65,
+      "bike_commute": 0.55,
+      "run": 0.7,
+      "swim": 0.65
+    },
+    "method_priority": {
+      "bike": [
+        "power",
+        "hr",
+        "assumed"
+      ],
+      "run": [
+        "pace",
+        "hr",
+        "assumed"
+      ],
+      "swim": [
+        "pace",
+        "assumed"
+      ]
+    }
+  },
+  "data_quality": {
+    "streams_fetch_attempted": false,
+    "streams_fetched_count": 0,
+    "streams_cache_hit_rate": 0,
+    "activity_details_fetch_attempted": true,
+    "activity_details_fetched_count": 25,
+    "stopped_early_reason": "activity_details_limit"
   },
   "premium_features": {
     "summit": false,
@@ -177,6 +237,31 @@
         "distance_weighted_sec_per_km": 326.94,
         "median_sec_per_km": 338.36,
         "sample_count": 15
+      },
+      "threshold": {
+        "vthr_mps": 3.268,
+        "source": "p90_speed",
+        "quality": "high"
+      },
+      "load_points": {
+        "weekly_median": 0.69,
+        "weekly_iqr": [
+          0.428,
+          0.9889999999999999
+        ],
+        "weekly_cv": 0.665,
+        "weeks_tracked": 9,
+        "ctl_end": 0.11,
+        "atl_end": 0.16,
+        "tsb_end": -0.05,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 1,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
       }
     },
     "bike": {
@@ -367,6 +452,26 @@
         "median_wkg": 2.2,
         "sample_count": 27
       },
+      "load_points": {
+        "weekly_median": 2.96,
+        "weekly_iqr": [
+          2.635,
+          3.474
+        ],
+        "weekly_cv": 0.445,
+        "weeks_tracked": 9,
+        "ctl_end": 0.46,
+        "atl_end": 0.53,
+        "tsb_end": -0.07,
+        "method_coverage": {
+          "hours_power": 1,
+          "hours_pace": 0,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
+      },
       "threshold": {
         "ftp_w_band": [
           261,
@@ -377,16 +482,6 @@
           3.987
         ],
         "quality": "medium"
-      },
-      "load_points": {
-        "weekly_median": 2.96,
-        "weekly_iqr": [
-          2.579312866395825,
-          3.473979648533492
-        ],
-        "weekly_cv": 0.441,
-        "weeks_tracked": 9,
-        "method": "ftp_if"
       }
     },
     "swim": {
@@ -495,6 +590,31 @@
         "distance_weighted_sec_per_100m": 132.83,
         "median_sec_per_100m": 129.15,
         "sample_count": 56
+      },
+      "threshold": {
+        "css_sec_per_100m": 114.8,
+        "source": "p20_pace",
+        "quality": "high"
+      },
+      "load_points": {
+        "weekly_median": 0,
+        "weekly_iqr": [
+          0,
+          0
+        ],
+        "weekly_cv": 2.828,
+        "weeks_tracked": 9,
+        "ctl_end": 0.02,
+        "atl_end": 0,
+        "tsb_end": 0.02,
+        "method_coverage": {
+          "hours_power": 0,
+          "hours_pace": 1,
+          "hours_hr": 0,
+          "hours_assumed": 0,
+          "hours_excluded_assisted": 0
+        },
+        "method": "if_squared"
       }
     }
   },
