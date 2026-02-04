@@ -262,6 +262,36 @@
           "hours_excluded_assisted": 0
         },
         "method": "if_squared"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [
+            "2026-01-12",
+            "2026-01-19",
+            "2026-01-26"
+          ],
+          "weekly_volume_p50": 4,
+          "weekly_volume_p75": 4,
+          "weekly_minutes_p50": 23.33,
+          "weekly_minutes_p75": 23.33,
+          "weekly_load_points_p50": 0.389,
+          "weekly_load_points_p75": 0.389,
+          "nonzero_weeks": 2
+        },
+        "last52w": {
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "max_weekly_volume": 5,
+          "nonzero_weeks": 2
+        },
+        "trend": {
+          "ratio_recent_to_primary": 5,
+          "note": "above_primary"
+        }
       }
     },
     "bike": {
@@ -482,6 +512,36 @@
           3.929
         ],
         "quality": "medium"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [
+            "2026-01-12",
+            "2026-01-19",
+            "2026-01-26"
+          ],
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "nonzero_weeks": 1
+        },
+        "last52w": {
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "max_weekly_volume": 1,
+          "nonzero_weeks": 2
+        },
+        "trend": {
+          "ratio_recent_to_primary": 0,
+          "note": "below_primary"
+        }
       }
     },
     "swim": {
@@ -615,6 +675,36 @@
           "hours_excluded_assisted": 0
         },
         "method": "if_squared"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [
+            "2026-01-12",
+            "2026-01-19",
+            "2026-01-26"
+          ],
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "nonzero_weeks": 1
+        },
+        "last52w": {
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "max_weekly_volume": 1,
+          "nonzero_weeks": 2
+        },
+        "trend": {
+          "ratio_recent_to_primary": 0,
+          "note": "below_primary"
+        }
       }
     }
   },
@@ -707,5 +797,74 @@
     "run_easy_pace_reason": "low_confidence",
     "run_intro_weekly_time_min_range": null,
     "transfer_confidence": null
+  },
+  "programming": {
+    "starter_targets": {
+      "as_of": "2026-02-04",
+      "mode": "pre_core_maintenance",
+      "by_sport": {
+        "bike": {
+          "weekly_hours_range": [
+            0.1,
+            0.2
+          ],
+          "long_hours_range": [
+            0,
+            0.1
+          ],
+          "sessions": 3,
+          "constraints": []
+        },
+        "run": {
+          "weekly_minutes_range": [
+            45,
+            90
+          ],
+          "sessions": 3,
+          "distance_km_cap_per_session": 3.3,
+          "constraints": [
+            "time_based"
+          ]
+        },
+        "swim": {
+          "weekly_minutes_range": [
+            30,
+            50
+          ],
+          "sessions": 2,
+          "constraints": []
+        }
+      },
+      "total_hours_range": [
+        1.4,
+        2.5
+      ],
+      "why": {
+        "recent3w": {
+          "bike_hours_p50": 0,
+          "run_minutes_p50": 23.33,
+          "swim_minutes_p50": 0
+        },
+        "primary56": {
+          "bike_hours_median": 0.17,
+          "run_km_median": 0.8,
+          "swim_km_median": 0.16
+        },
+        "last52w": {
+          "bike_hours_p50": 0,
+          "run_minutes_p50": 0,
+          "swim_minutes_p50": 0,
+          "swim_km_p50": 0
+        },
+        "flags": {
+          "high_cardio_low_impact": false
+        },
+        "gap_days": {
+          "run": 3,
+          "bike": 2,
+          "swim": 1
+        }
+      }
+    }
   }
 }

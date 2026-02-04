@@ -159,6 +159,32 @@
         },
         "method": "if_squared"
       },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [],
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "nonzero_weeks": 0
+        },
+        "last52w": {
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "max_weekly_volume": 0,
+          "nonzero_weeks": 0
+        },
+        "trend": {
+          "ratio_recent_to_primary": null,
+          "note": ""
+        }
+      },
       "zones": {
         "source": "activity_zones",
         "heartrate": null,
@@ -222,6 +248,32 @@
           "hours_excluded_assisted": 0
         },
         "method": "if_squared"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [],
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "nonzero_weeks": 0
+        },
+        "last52w": {
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "max_weekly_volume": 0,
+          "nonzero_weeks": 0
+        },
+        "trend": {
+          "ratio_recent_to_primary": null,
+          "note": ""
+        }
       },
       "coverage": {
         "total_activities": 0,
@@ -293,6 +345,32 @@
           "hours_excluded_assisted": 0
         },
         "method": "if_squared"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [],
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "nonzero_weeks": 0
+        },
+        "last52w": {
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "max_weekly_volume": 0,
+          "nonzero_weeks": 0
+        },
+        "trend": {
+          "ratio_recent_to_primary": null,
+          "note": ""
+        }
       },
       "coverage": {
         "total_activities": 0,
@@ -382,6 +460,54 @@
     "run_easy_pace_reason": null,
     "run_intro_weekly_time_min_range": null,
     "transfer_confidence": null
+  },
+  "programming": {
+    "starter_targets": {
+      "as_of": "",
+      "mode": "pre_core_maintenance",
+      "by_sport": {
+        "bike": {
+          "weekly_hours_range": [
+            0,
+            0
+          ],
+          "long_hours_range": [
+            0,
+            0
+          ],
+          "sessions": 0,
+          "constraints": []
+        },
+        "run": {
+          "weekly_minutes_range": [
+            0,
+            0
+          ],
+          "sessions": 0,
+          "distance_km_cap_per_session": 0,
+          "constraints": []
+        },
+        "swim": {
+          "weekly_minutes_range": [
+            0,
+            0
+          ],
+          "sessions": 0,
+          "constraints": []
+        }
+      },
+      "total_hours_range": [
+        0,
+        0
+      ],
+      "why": {
+        "recent3w": {},
+        "primary56": {},
+        "last52w": {},
+        "flags": {},
+        "gap_days": {}
+      }
+    }
   },
   "context": {
     "short_window": {

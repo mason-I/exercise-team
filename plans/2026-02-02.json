@@ -1,28 +1,28 @@
 {
   "week_start": "2026-02-02",
-  "phase": "offseason",
+  "phase": "prep",
   "targets": {
     "run": {
-      "sessions": 1,
-      "volume_km": 4.08,
-      "long_km": 1.6,
-      "volume_min": 23,
-      "long_min": 9,
-      "load_points": 0
+      "sessions": 3,
+      "volume_km": 15.6,
+      "long_km": 6.21,
+      "volume_min": 88,
+      "long_min": 35,
+      "load_points": 0.91
     },
     "bike": {
       "sessions": 3,
-      "volume_hours": 4.19,
-      "long_hours": 1.68,
-      "load_points": 0
+      "volume_hours": 7.85,
+      "long_hours": 2.85,
+      "load_points": 3.35
     },
     "swim": {
       "sessions": 2,
-      "volume_km": 1.86,
-      "long_km": 0.74,
-      "volume_min": 40,
-      "long_min": 16,
-      "load_points": 0
+      "volume_km": 2.79,
+      "long_km": 1.11,
+      "volume_min": 60,
+      "long_min": 24,
+      "load_points": 0.5
     }
   },
   "nutrition": {
@@ -34,27 +34,35 @@
       "date": "2026-02-02",
       "discipline": "swim",
       "type": "technique",
-      "duration_min": 24,
-      "distance_km": 1.11,
+      "duration_min": 36,
+      "distance_km": 1.67,
       "intensity": {
-        "effort_hint": "technique"
+        "effort_hint": "technique",
+        "pace_sec_per_100m_range": [
+          153.1,
+          191.3
+        ]
       }
     },
     {
       "date": "2026-02-05",
       "discipline": "swim",
       "type": "long",
-      "duration_min": 16,
-      "distance_km": 0.74,
+      "duration_min": 24,
+      "distance_km": 1.11,
       "intensity": {
-        "effort_hint": "long"
+        "effort_hint": "long",
+        "pace_sec_per_100m_range": [
+          135.1,
+          164
+        ]
       }
     },
     {
       "date": "2026-02-03",
       "discipline": "bike",
       "type": "easy",
-      "duration_min": 75.3,
+      "duration_min": 150,
       "intensity": {
         "target_if_range": [
           0.55,
@@ -71,7 +79,7 @@
       "date": "2026-02-05",
       "discipline": "bike",
       "type": "easy",
-      "duration_min": 75.3,
+      "duration_min": 150,
       "intensity": {
         "target_if_range": [
           0.55,
@@ -88,7 +96,7 @@
       "date": "2026-02-07",
       "discipline": "bike",
       "type": "long",
-      "duration_min": 100.8,
+      "duration_min": 171,
       "intensity": {
         "target_if_range": [
           0.65,
@@ -104,10 +112,40 @@
     {
       "date": "2026-02-04",
       "discipline": "run",
+      "type": "easy",
+      "duration_min": 26.5,
+      "distance_km": 4.7,
+      "distance_km_cap": 5.5,
+      "intensity": {
+        "effort_hint": "easy",
+        "pace_sec_per_km_range": [
+          355.3,
+          423
+        ]
+      }
+    },
+    {
+      "date": "2026-02-06",
+      "discipline": "run",
+      "type": "easy",
+      "duration_min": 26.5,
+      "distance_km": 4.7,
+      "distance_km_cap": 5.5,
+      "intensity": {
+        "effort_hint": "easy",
+        "pace_sec_per_km_range": [
+          355.3,
+          423
+        ]
+      }
+    },
+    {
+      "date": "2026-02-03",
+      "discipline": "run",
       "type": "long",
-      "duration_min": 9,
-      "distance_km": 1.6,
-      "distance_km_cap": 5.4,
+      "duration_min": 35,
+      "distance_km": 5.5,
+      "distance_km_cap": 5.5,
       "intensity": {
         "effort_hint": "long",
         "pace_sec_per_km_range": [
@@ -117,6 +155,8 @@
       }
     }
   ],
-  "notes": [],
+  "notes": [
+    "Pre-core maintenance targets applied from baseline starter_targets."
+  ],
   "flags": []
 }

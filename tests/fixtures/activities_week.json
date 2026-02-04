@@ -1,0 +1,37 @@
+[
+  {
+    "id": 201,
+    "name": "Morning Run",
+    "sport_type": "Run",
+    "start_date_local": "2026-02-02T07:00:00",
+    "distance_m": 5200,
+    "moving_time_sec": 1920,
+    "average_grade_adjusted_speed": 2.7
+  },
+  {
+    "id": 202,
+    "name": "Lunch Ride",
+    "sport_type": "Ride",
+    "start_date_local": "2026-02-03T12:00:00",
+    "distance_m": 21000,
+    "moving_time_sec": 3300,
+    "average_watts": 175
+  },
+  {
+    "id": 203,
+    "name": "Extra Shakeout",
+    "sport_type": "Run",
+    "start_date_local": "2026-02-04T16:00:00",
+    "distance_m": 3000,
+    "moving_time_sec": 1200
+  },
+  {
+    "id": 204,
+    "name": "Pool Laps",
+    "sport_type": "Swim",
+    "start_date_local": "2026-02-04T06:00:00",
+    "distance_m": 1500,
+    "moving_time_sec": 1800,
+    "pace_sec_per_100m": 120
+  }
+]

@@ -8,13 +8,13 @@
       "long_km": 3,
       "volume_min": 58,
       "long_min": 18,
-      "load_points": 0
+      "load_points": 0.52
     },
     "bike": {
       "sessions": 3,
       "volume_hours": 6.65,
       "long_hours": 2.66,
-      "load_points": 0
+      "load_points": 2.86
     },
     "swim": {
       "sessions": 3,
@@ -22,7 +22,7 @@
       "long_km": 1.2,
       "volume_min": 90,
       "long_min": 36,
-      "load_points": 0
+      "load_points": 0.77
     }
   },
   "nutrition": {
@@ -116,7 +116,7 @@
       "discipline": "run",
       "type": "easy",
       "duration_min": 40,
-      "distance_km": 6.67,
+      "distance_km": 2.5,
       "distance_km_cap": 2.5,
       "intensity": {
         "effort_hint": "easy",
@@ -131,7 +131,7 @@
       "discipline": "run",
       "type": "long",
       "duration_min": 18,
-      "distance_km": 3,
+      "distance_km": 2.5,
       "distance_km_cap": 2.5,
       "intensity": {
         "effort_hint": "long",

@@ -1,0 +1,51 @@
+{
+  "week_start": "2026-02-02",
+  "targets": {
+    "run": {
+      "sessions": 2,
+      "volume_km": 10,
+      "volume_min": 60,
+      "load_points": 1.2
+    },
+    "bike": {
+      "sessions": 1,
+      "volume_hours": 2,
+      "load_points": 1.5
+    },
+    "swim": {
+      "sessions": 1,
+      "volume_km": 2,
+      "volume_min": 25,
+      "load_points": 0.8
+    }
+  },
+  "sessions": [
+    {
+      "date": "2026-02-02",
+      "discipline": "run",
+      "type": "easy",
+      "duration_min": 30,
+      "distance_km": 5
+    },
+    {
+      "date": "2026-02-03",
+      "discipline": "bike",
+      "type": "easy",
+      "duration_min": 60
+    },
+    {
+      "date": "2026-02-04",
+      "discipline": "swim",
+      "type": "easy",
+      "duration_min": 25,
+      "distance_km": 1.4
+    },
+    {
+      "date": "2026-02-05",
+      "discipline": "run",
+      "type": "long",
+      "duration_min": 30,
+      "distance_km": 5
+    }
+  ]
+}

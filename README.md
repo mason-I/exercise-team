@@ -16,6 +16,8 @@ This repo implements the PRD in `PRD.md` using Claude Code project assets:
 5. Analyze goal/load targets: `/analyze-goal`
 6. Build a week: `/build-week 2026-01-26`
 7. Analyze adherence after the week: `/analyze-strava 2026-01-26`
+8. Mid-week/as-of analysis: `node .claude/skills/analyze-strava/scripts/analyze_strava.js 2026-01-26 --as-of-date 2026-01-29`
+9. Keep Strava activities fresh locally: `node .claude/skills/setup/scripts/sync_strava_activities.js --loop`
 
 ## Data format for `data/strava_activities.json`
 
@@ -46,6 +48,7 @@ Accepted fields:
 - `.claude/skills/analyze-goal/scripts/analyze_goal.js` -> `goal_analysis.json`
 - `.claude/skills/build-week/scripts/build_week.js` -> `plans/YYYY-MM-DD.json` + `.md`
 - `.claude/skills/analyze-strava/scripts/analyze_strava.js` -> `reports/YYYY-MM-DD-week.md`
+- `.claude/skills/setup/scripts/sync_strava_activities.js` -> incremental updates to `data/strava_activities.json` + `data/strava_sync_state.json`
 - `.claude/skills/validate-artifacts/scripts/validate_artifacts.js` -> schema and safety checks
 
 ## Templates

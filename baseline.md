@@ -117,3 +117,10 @@ Window: 2025-12-11 to 2026-02-04
 
 ## Transfer
 - Run easy pace range: unavailable (insufficient_run_pace_samples)
+
+## Starter Targets
+- Mode: pre_core_maintenance
+- Total hours range: 1.4–2.4
+- Bike: 0.1–0.1 h (3 sessions)
+- Run: 45–90 min (3 sessions, cap 3 km/session)
+- Swim: 30–50 min (2 sessions)

@@ -49,6 +49,7 @@ When generating or updating a weekly plan, **always delegate** to:
 4. **Build**: Run `/build-week` for the requested week.
 5. **Adjust** (optional): Use `/adjust-week` for constraints or missed sessions.
 6. **Analyze**: Use `/analyze-strava` after the week to generate adherence report.
+7. **Anytime check-in** (optional): Run `node .claude/skills/analyze-strava/scripts/analyze_strava.js <week_start> --as-of-date <YYYY-MM-DD>` for week-to-date pacing and session-level matching.
 
 ## Safety Rules
 - Week 1 volume must not exceed baseline medians unless explicitly overridden.

@@ -6,6 +6,7 @@ allowed-tools:
   - Bash(cat*)
   - Bash(mkdir -p data*)
   - Bash(node .claude/skills/setup/scripts/fetch_strava_activities.js*)
+  - Bash(node .claude/skills/setup/scripts/sync_strava_activities.js*)
 ---
 
 # Setup (Onboarding)
@@ -44,9 +45,9 @@ allowed-tools:
 4. **Pull Strava activities (all history)**
    - Export all available Strava activities and normalize fields.
    - The baseline script will weight the most recent 56 days more heavily but retain historical activity so we don't treat inactive periods as zero fitness.
-   - Use the fetch script to export activities and normalize fields (omit `--window-days` to pull full history). Avoid MCP `get-all-activities` to prevent large tool outputs:
+   - Use the fetch script to export activities and normalize fields (`--all` pulls full history). Avoid MCP `get-all-activities` to prevent large tool outputs:
      ```bash
-     node .claude/skills/setup/scripts/fetch_strava_activities.js --out data/strava_activities.json
+     node .claude/skills/setup/scripts/fetch_strava_activities.js --all --out data/strava_activities.json
      ```
    - Requires Strava API creds in env:
      - `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN`
@@ -61,6 +62,16 @@ allowed-tools:
 5. **Compute baseline**
    - Run `/compute-baseline 56`.
    - Confirm `baseline.json` and `baseline.md` were updated.
+
+6. **Enable always-on local sync (optional)**
+   - Start a continuous polling sync (same machine) so `data/strava_activities.json` stays fresh:
+     ```bash
+     node .claude/skills/setup/scripts/sync_strava_activities.js --loop
+     ```
+   - Single refresh (non-loop):
+     ```bash
+     node .claude/skills/setup/scripts/sync_strava_activities.js
+     ```
 
 ## Output checklist
 - `profile.json` updated (athlete + goal)

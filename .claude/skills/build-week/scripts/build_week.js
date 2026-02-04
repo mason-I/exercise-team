@@ -94,6 +94,9 @@ function parseArgs() {
 }
 
 function findPhase(calendar, weekStartDate) {
+  if (isPreCoreWeek(calendar, weekStartDate)) {
+    return "prep";
+  }
   for (const phase of calendar.phases || []) {
     const start = parseDate(phase.start);
     const end = parseDate(phase.end);
@@ -102,6 +105,11 @@ function findPhase(calendar, weekStartDate) {
     }
   }
   return "offseason";
+}
+
+function isPreCoreWeek(calendar, weekStartDate) {
+  const planningStart = parseDate(calendar?.planning?.start_date);
+  return Boolean(planningStart && weekStartDate < planningStart);
 }
 
 function restDayIndex(value) {
@@ -162,6 +170,66 @@ function loadGoalAnalysis(goalPath) {
   if (!goalPath) return null;
   if (!fs.existsSync(goalPath)) return null;
   return loadJson(goalPath);
+}
+
+function midpoint(range, fallback = 0) {
+  if (!Array.isArray(range) || range.length !== 2) return fallback;
+  return (Number(range[0]) + Number(range[1])) / 2;
+}
+
+function buildDisciplineTargetFromStarter(discipline, baseline, starterTargets, options) {
+  const starter = starterTargets?.by_sport?.[discipline];
+  if (!starter) return null;
+  const metrics = baseline.disciplines[discipline];
+  const session = metrics.session || {};
+  if (discipline === "bike") {
+    const weeklyHours = midpoint(starter.weekly_hours_range, metrics.weekly.volume_median || 0);
+    const longHours = midpoint(starter.long_hours_range, metrics.long_session.weekly_max_median || weeklyHours * 0.35);
+    return {
+      sessions: Math.max(1, Number(starter.sessions || Math.round(metrics.weekly.sessions_median) || 3)),
+      weekly_volume: Number(weeklyHours.toFixed(2)),
+      long_session: Number(Math.min(longHours, weeklyHours * 0.45).toFixed(2)),
+      typical_distance: Number((session.distance_median || 0).toFixed(2)),
+      typical_duration_min: Number((session.duration_median_min || 0).toFixed(1)),
+      units: metrics.units,
+      time_based: false,
+    };
+  }
+
+  if (discipline === "run") {
+    const paceSecPerKm = options.runPaceSecPerKm || typicalRunPaceSecPerKm(baseline);
+    const weeklyMin = Math.round(midpoint(starter.weekly_minutes_range, 60));
+    const longMin = Math.round(weeklyMin * 0.4);
+    return {
+      sessions: Math.max(1, Number(starter.sessions || 3)),
+      weekly_volume: Number(((weeklyMin * 60) / paceSecPerKm).toFixed(2)),
+      weekly_volume_min: weeklyMin,
+      long_session: Number(((longMin * 60) / paceSecPerKm).toFixed(2)),
+      long_session_min: longMin,
+      typical_distance: Number((session.distance_median || 0).toFixed(2)),
+      typical_duration_min: Number((session.duration_median_min || 0).toFixed(1)),
+      units: metrics.units,
+      time_based: true,
+    };
+  }
+
+  if (discipline === "swim") {
+    const paceSecPer100m = options.swimPaceSecPer100m || typicalSwimPaceSecPer100m(baseline);
+    const weeklyMin = Math.round(midpoint(starter.weekly_minutes_range, 50));
+    const longMin = Math.round(weeklyMin * 0.4);
+    return {
+      sessions: Math.max(1, Number(starter.sessions || 2)),
+      weekly_volume: Number(((weeklyMin * 60) / (paceSecPer100m * 10)).toFixed(2)),
+      weekly_volume_min: weeklyMin,
+      long_session: Number(((longMin * 60) / (paceSecPer100m * 10)).toFixed(2)),
+      long_session_min: longMin,
+      typical_distance: Number((session.distance_median || 0).toFixed(2)),
+      typical_duration_min: Number((session.duration_median_min || 0).toFixed(1)),
+      units: metrics.units,
+      time_based: true,
+    };
+  }
+  return null;
 }
 
 function buildDisciplineTarget(discipline, baseline, phase, options) {
@@ -400,6 +468,9 @@ function allocateSessions(discipline, target, phase, weekStartDate, restIdx, bas
 
     if (discipline === "run" && distanceCapKm) {
       entry.distance_km_cap = distanceCapKm;
+      if (entry.distance_km != null && entry.distance_km > distanceCapKm) {
+        entry.distance_km = Number(distanceCapKm.toFixed(2));
+      }
     }
 
     entry.intensity = sessionIntensity(discipline, sessionType, baseline);
@@ -412,7 +483,7 @@ function computeLoadPointsForPlan(plan, baseline) {
   const totals = { run: 0, bike: 0, swim: 0 };
   for (const session of plan.sessions) {
     const discipline = session.discipline;
-    if (!totals[discipline]) continue;
+    if (!(discipline in totals)) continue;
     const durationMin = session.duration_min || 0;
     const hours = durationMin / 60;
     const ifVal = estimateSessionIf(discipline, session.type, baseline, session.intensity);
@@ -453,9 +524,11 @@ function main() {
   const profile = loadJson(options.profile);
   const goalAnalysis = loadGoalAnalysis(options.goalAnalysis);
 
+  const preCoreWeek = isPreCoreWeek(calendar, weekStartDate);
   const phase = findPhase(calendar, weekStartDate);
   const restIdx = restDayIndex(profile?.preferences?.rest_day);
   const triGoal = isTriGoal(profile);
+  const starterTargets = preCoreWeek ? baseline?.programming?.starter_targets : null;
 
   const runTimeBased = Boolean(baseline?.composite?.flags?.high_cardio_low_impact);
   const swimReentry =
@@ -471,17 +544,24 @@ function main() {
   const sessions = [];
 
   for (const discipline of ["swim", "bike", "run"]) {
-    const target = buildDisciplineTarget(discipline, baseline, phase, {
+    const commonOptions = {
       runTimeBased,
       swimReentry,
       runIntroRange,
       runPaceSecPerKm: runPace,
       swimPaceSecPer100m: swimPace,
       runLongCapMin,
-    });
+    };
+    const target =
+      buildDisciplineTargetFromStarter(discipline, baseline, starterTargets, commonOptions) ||
+      buildDisciplineTarget(discipline, baseline, phase, commonOptions);
     targets[discipline] = target;
 
-    const distanceCapKm = discipline === "run" && runTimeBased ? runDistanceCapKm(baseline, target.sessions) : null;
+    const starterRunCap = starterTargets?.by_sport?.run?.distance_km_cap_per_session;
+    const distanceCapKm =
+      discipline === "run" && runTimeBased
+        ? Number(starterRunCap || runDistanceCapKm(baseline, target.sessions) || 0) || null
+        : null;
     sessions.push(...allocateSessions(discipline, target, phase, weekStartDate, restIdx, baseline, distanceCapKm));
   }
 
@@ -514,7 +594,7 @@ function main() {
       notes: (profile.nutrition || {}).notes || "",
     },
     sessions,
-    notes: [],
+    notes: preCoreWeek ? ["Pre-core maintenance targets applied from baseline starter_targets."] : [],
     flags: [],
   };
 

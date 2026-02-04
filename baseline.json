@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-02-03",
+  "generated_at": "2026-02-04",
   "windows": {
     "short_days": 14,
     "primary_days": 56,
     "long_days": 112,
-    "all_start": "2024-02-05",
-    "all_end": "2026-02-02",
-    "primary_start": "2025-12-10",
-    "primary_end": "2026-02-03"
+    "all_start": "2023-09-06",
+    "all_end": "2026-02-04",
+    "primary_start": "2025-12-11",
+    "primary_end": "2026-02-04"
   },
   "weighting": {
     "mode": "recent_weighted",
@@ -110,7 +110,7 @@
         "volume_median": 6.4,
         "volume_iqr": [
           4.03,
-          10.92
+          10.89
         ],
         "zero_weeks": 2,
         "volume_cv": 0.71,
@@ -124,7 +124,7 @@
       },
       "session": {
         "distance_median": 4.83,
-        "duration_median_min": 27.05,
+        "duration_median_min": 27.18,
         "sessions_tracked": 15,
         "elevation_gain_median_m": 0
       },
@@ -133,13 +133,13 @@
       },
       "intensity": {
         "pace": {
-          "distance_weighted_sec_per_km": 329.05,
-          "median_sec_per_km": 338.22,
+          "distance_weighted_sec_per_km": 328.6,
+          "median_sec_per_km": 337.49,
           "sample_count": 15
         },
         "heart_rate": {
-          "duration_weighted_bpm": 154.2,
-          "median_bpm": 152.16,
+          "duration_weighted_bpm": 154.42,
+          "median_bpm": 152.32,
           "sample_count": 11
         }
       },
@@ -150,7 +150,7 @@
       },
       "confidence": "low",
       "history": {
-        "gap_days": 1,
+        "gap_days": 2,
         "recent": {
           "weekly": {
             "sessions_median": 1,
@@ -197,11 +197,11 @@
             "volume_median": 0,
             "volume_iqr": [
               0,
-              5.383800000000001
+              5.239700000000001
             ],
-            "zero_weeks": 52,
-            "volume_cv": 1.512,
-            "weeks_tracked": 97,
+            "zero_weeks": 67,
+            "volume_cv": 1.559,
+            "weeks_tracked": 119,
             "elevation_gain_median": 0,
             "distance_km_median": 0,
             "distance_km_iqr": [
@@ -210,9 +210,9 @@
             ]
           },
           "session": {
-            "distance_median": 4.008,
-            "duration_median_min": 22.116666666666667,
-            "sessions_tracked": 81,
+            "distance_median": 4.0194,
+            "duration_median_min": 22.75,
+            "sessions_tracked": 89,
             "elevation_gain_median_m": 0
           },
           "long_session": {
@@ -220,19 +220,19 @@
           },
           "intensity": {
             "pace": {
-              "distance_weighted_sec_per_km": 337.51,
-              "median_sec_per_km": 337.66,
-              "sample_count": 77
+              "distance_weighted_sec_per_km": 335.23,
+              "median_sec_per_km": 334,
+              "sample_count": 85
             },
             "heart_rate": {
-              "duration_weighted_bpm": 156.6,
-              "median_bpm": 156,
-              "sample_count": 65
+              "duration_weighted_bpm": 157.7,
+              "median_bpm": 156.8,
+              "sample_count": 70
             }
           }
         }
       },
-      "gap_days_discipline": 1,
+      "gap_days_discipline": 2,
       "pace": {
         "distance_weighted_sec_per_km": 326.94,
         "median_sec_per_km": 338.36,
@@ -251,9 +251,9 @@
         ],
         "weekly_cv": 0.665,
         "weeks_tracked": 9,
-        "ctl_end": 0.11,
-        "atl_end": 0.16,
-        "tsb_end": -0.05,
+        "ctl_end": 0.1,
+        "atl_end": 0.14,
+        "tsb_end": -0.04,
         "method_coverage": {
           "hours_power": 0,
           "hours_pace": 1,
@@ -262,6 +262,36 @@
           "hours_excluded_assisted": 0
         },
         "method": "if_squared"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [
+            "2026-01-12",
+            "2026-01-19",
+            "2026-01-26"
+          ],
+          "weekly_volume_p50": 13.68,
+          "weekly_volume_p75": 13.68,
+          "weekly_minutes_p50": 77.63,
+          "weekly_minutes_p75": 77.63,
+          "weekly_load_points_p50": 1.045,
+          "weekly_load_points_p75": 1.045,
+          "nonzero_weeks": 2
+        },
+        "last52w": {
+          "weekly_volume_p50": 5.64,
+          "weekly_volume_p75": 11.68,
+          "weekly_minutes_p50": 28.35,
+          "weekly_minutes_p75": 63.73,
+          "weekly_load_points_p50": 0.463,
+          "weekly_load_points_p75": 0.797,
+          "max_weekly_volume": 29.17,
+          "nonzero_weeks": 41
+        },
+        "trend": {
+          "ratio_recent_to_primary": 2.137,
+          "note": "above_primary"
+        }
       }
     },
     "bike": {
@@ -274,54 +304,54 @@
       },
       "weekly": {
         "sessions_median": 3,
-        "volume_median": 7.35,
+        "volume_median": 6.84,
         "volume_iqr": [
-          6.56,
-          8.77
+          5.69,
+          8.62
         ],
         "zero_weeks": 0,
-        "volume_cv": 0.488,
+        "volume_cv": 0.432,
         "weeks_tracked": 9,
-        "elevation_gain_median": 3094.28,
-        "distance_km_median": 201.7221,
+        "elevation_gain_median": 3045.32,
+        "distance_km_median": 200.8969,
         "distance_km_iqr": [
-          190.4026,
-          239.2939
+          173.6815,
+          227.4343
         ]
       },
       "session": {
-        "distance_median": 57.97,
-        "duration_median_min": 144.1,
+        "distance_median": 57.66,
+        "duration_median_min": 142.99,
         "sessions_tracked": 27,
-        "elevation_gain_median_m": 743.48
+        "elevation_gain_median_m": 736.2
       },
       "long_session": {
-        "weekly_max_median": 3.46
+        "weekly_max_median": 3.41
       },
       "intensity": {
         "speed": {
-          "distance_weighted_kmh": 26.04,
-          "median_kmh": 26.17,
+          "distance_weighted_kmh": 25.95,
+          "median_kmh": 26.11,
           "sample_count": 27
         },
         "power": {
-          "duration_weighted_watts": 168.84,
-          "median_watts": 175.76,
+          "duration_weighted_watts": 167.96,
+          "median_watts": 173.22,
           "sample_count": 27
         },
         "power_wkg": {
-          "duration_weighted_wkg": 2.11,
-          "median_wkg": 2.2,
+          "duration_weighted_wkg": 2.1,
+          "median_wkg": 2.17,
           "sample_count": 27
         },
         "heart_rate": {
-          "duration_weighted_bpm": 30.5,
-          "median_bpm": 30.64,
+          "duration_weighted_bpm": 30.54,
+          "median_bpm": 30.72,
           "sample_count": 0
         },
         "if": {
-          "duration_weighted_if": 0.598,
-          "median_if": 0.631,
+          "duration_weighted_if": 0.594,
+          "median_if": 0.62,
           "sample_count": 27
         }
       },
@@ -334,23 +364,23 @@
       },
       "confidence": "medium",
       "history": {
-        "gap_days": 1,
+        "gap_days": 0,
         "recent": {
           "weekly": {
             "sessions_median": 3,
-            "volume_median": 7.880833333333333,
+            "volume_median": 7.5225,
             "volume_iqr": [
-              7.388888888888889,
+              6.604166666666667,
               9.179722222222221
             ],
             "zero_weeks": 0,
-            "volume_cv": 0.488,
+            "volume_cv": 0.432,
             "weeks_tracked": 9,
-            "elevation_gain_median": 3478,
-            "distance_km_median": 201.7221,
+            "elevation_gain_median": 3450.8,
+            "distance_km_median": 200.8969,
             "distance_km_iqr": [
-              190.4026,
-              239.2939
+              173.6815,
+              227.4343
             ]
           },
           "session": {
@@ -364,18 +394,18 @@
           },
           "intensity": {
             "speed": {
-              "distance_weighted_kmh": 26.46,
-              "median_kmh": 26.84,
+              "distance_weighted_kmh": 26.37,
+              "median_kmh": 26.82,
               "sample_count": 27
             },
             "power": {
-              "duration_weighted_watts": 173.5,
-              "median_watts": 183.1,
+              "duration_weighted_watts": 172.3,
+              "median_watts": 179.9,
               "sample_count": 27
             },
             "power_wkg": {
-              "duration_weighted_wkg": 2.169,
-              "median_wkg": 2.289,
+              "duration_weighted_wkg": 2.153,
+              "median_wkg": 2.249,
               "sample_count": 27
             },
             "heart_rate": {
@@ -388,81 +418,81 @@
         "historical": {
           "weekly": {
             "sessions_median": 3,
-            "volume_median": 5.2027777777777775,
+            "volume_median": 4.105277777777777,
             "volume_iqr": [
-              3.2675,
-              7.1075
+              2.0480555555555555,
+              6.377222222222223
             ],
-            "zero_weeks": 4,
-            "volume_cv": 0.537,
-            "weeks_tracked": 97,
-            "elevation_gain_median": 1559.4,
-            "distance_km_median": 120.8281,
+            "zero_weeks": 7,
+            "volume_cv": 0.646,
+            "weeks_tracked": 119,
+            "elevation_gain_median": 1423.3999999999999,
+            "distance_km_median": 93.97,
             "distance_km_iqr": [
-              60.653499999999994,
-              167.50060000000002
+              40.772400000000005,
+              147.45589999999999
             ]
           },
           "session": {
-            "distance_median": 18.9821,
-            "duration_median_min": 49.233333333333334,
-            "sessions_tracked": 345,
-            "elevation_gain_median_m": 225.4
+            "distance_median": 17.441200000000002,
+            "duration_median_min": 43.68333333333333,
+            "sessions_tracked": 401,
+            "elevation_gain_median_m": 189
           },
           "long_session": {
-            "weekly_max_median": 2.2625
+            "weekly_max_median": 2.0122222222222224
           },
           "intensity": {
             "speed": {
-              "distance_weighted_kmh": 24.38,
-              "median_kmh": 23.5,
-              "sample_count": 330
+              "distance_weighted_kmh": 24.27,
+              "median_kmh": 23.29,
+              "sample_count": 380
             },
             "power": {
-              "duration_weighted_watts": 150.2,
-              "median_watts": 146.4,
-              "sample_count": 290
+              "duration_weighted_watts": 150.6,
+              "median_watts": 146.5,
+              "sample_count": 291
             },
             "power_wkg": {
-              "duration_weighted_wkg": 1.877,
-              "median_wkg": 1.83,
-              "sample_count": 290
+              "duration_weighted_wkg": 1.883,
+              "median_wkg": 1.831,
+              "sample_count": 291
             },
             "heart_rate": {
-              "duration_weighted_bpm": 152.5,
-              "median_bpm": 153.2,
-              "sample_count": 294
+              "duration_weighted_bpm": 152.7,
+              "median_bpm": 153.6,
+              "sample_count": 335
             }
           }
         }
       },
-      "gap_days_discipline": 1,
+      "gap_days_discipline": 0,
       "speed": {
-        "distance_weighted_kmh": 26.46,
-        "median_kmh": 26.84,
+        "distance_weighted_kmh": 26.37,
+        "median_kmh": 26.82,
         "sample_count": 27
       },
       "power": {
-        "duration_weighted_watts": 173.5,
-        "median_watts": 183.1,
+        "duration_weighted_watts": 172.3,
+        "median_watts": 179.9,
         "sample_count": 27
       },
       "power_wkg": {
-        "duration_weighted_wkg": 2.11,
-        "median_wkg": 2.2,
+        "duration_weighted_wkg": 2.1,
+        "median_wkg": 2.17,
         "sample_count": 27
       },
       "load_points": {
-        "weekly_median": 2.96,
+        "weekly_median": 2.64,
         "weekly_iqr": [
-          2.635,
-          3.474
+          2.444,
+          3.3689999999999998
         ],
-        "weekly_cv": 0.445,
+        "weekly_cv": 0.366,
         "weeks_tracked": 9,
-        "ctl_end": 0.46,
-        "atl_end": 0.53,
-        "tsb_end": -0.07,
+        "ctl_end": 0.49,
+        "atl_end": 0.7,
+        "tsb_end": -0.21,
         "method_coverage": {
           "hours_power": 1,
           "hours_pace": 0,
@@ -482,6 +512,36 @@
           3.987
         ],
         "quality": "medium"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [
+            "2026-01-12",
+            "2026-01-19",
+            "2026-01-26"
+          ],
+          "weekly_volume_p50": 7.52,
+          "weekly_volume_p75": 7.52,
+          "weekly_minutes_p50": 451.35,
+          "weekly_minutes_p75": 451.35,
+          "weekly_load_points_p50": 3.474,
+          "weekly_load_points_p75": 3.474,
+          "nonzero_weeks": 3
+        },
+        "last52w": {
+          "weekly_volume_p50": 6.6,
+          "weekly_volume_p75": 8.37,
+          "weekly_minutes_p50": 396.25,
+          "weekly_minutes_p75": 502.13,
+          "weekly_load_points_p50": 2.028,
+          "weekly_load_points_p75": 2.636,
+          "max_weekly_volume": 16.12,
+          "nonzero_weeks": 53
+        },
+        "trend": {
+          "ratio_recent_to_primary": 1.099,
+          "note": "stable"
+        }
       }
     },
     "swim": {
@@ -496,7 +556,7 @@
         "volume_median": 0,
         "volume_iqr": [
           0,
-          0.51
+          0.3
         ],
         "zero_weeks": 8,
         "volume_cv": 2.828,
@@ -525,7 +585,7 @@
       },
       "confidence": "low",
       "history": {
-        "gap_days": 47,
+        "gap_days": 48,
         "recent": {
           "weekly": {
             "sessions_median": 0,
@@ -561,11 +621,11 @@
             "volume_median": 0,
             "volume_iqr": [
               0,
-              1.7
+              1
             ],
-            "zero_weeks": 66,
-            "volume_cv": 1.803,
-            "weeks_tracked": 97,
+            "zero_weeks": 88,
+            "volume_cv": 2.053,
+            "weeks_tracked": 119,
             "elevation_gain_median": 0,
             "distance_km_median": 0,
             "distance_km_iqr": [
@@ -585,7 +645,7 @@
           "intensity": {}
         }
       },
-      "gap_days_discipline": 47,
+      "gap_days_discipline": 48,
       "pace": {
         "distance_weighted_sec_per_100m": 132.83,
         "median_sec_per_100m": 129.15,
@@ -615,60 +675,90 @@
           "hours_excluded_assisted": 0
         },
         "method": "if_squared"
+      },
+      "envelope": {
+        "recent3_full_weeks": {
+          "weeks": [
+            "2026-01-12",
+            "2026-01-19",
+            "2026-01-26"
+          ],
+          "weekly_volume_p50": 0,
+          "weekly_volume_p75": 0,
+          "weekly_minutes_p50": 0,
+          "weekly_minutes_p75": 0,
+          "weekly_load_points_p50": 0,
+          "weekly_load_points_p75": 0,
+          "nonzero_weeks": 0
+        },
+        "last52w": {
+          "weekly_volume_p50": 1.52,
+          "weekly_volume_p75": 2.8,
+          "weekly_minutes_p50": 37.45,
+          "weekly_minutes_p75": 68.05,
+          "weekly_load_points_p50": 0.379,
+          "weekly_load_points_p75": 0.759,
+          "max_weekly_volume": 7.6,
+          "nonzero_weeks": 31
+        },
+        "trend": {
+          "ratio_recent_to_primary": null,
+          "note": "insufficient_primary"
+        }
       }
     }
   },
   "context": {
     "short_window": {
-      "start": "2026-01-21",
-      "end": "2026-02-03",
+      "start": "2026-01-22",
+      "end": "2026-02-04",
       "activity_count": 13
     },
     "long_window": {
-      "start": "2025-10-15",
-      "end": "2026-02-03",
-      "activity_count": 96
+      "start": "2025-10-16",
+      "end": "2026-02-04",
+      "activity_count": 93
     }
   },
   "composite": {
     "weekly": {
-      "total_endurance_hours_median": 8.85,
+      "total_endurance_hours_median": 8.55,
       "total_endurance_hours_iqr": [
-        7.522500000000001,
-        9.62
+        7.032222222222223,
+        9.620000000000001
       ],
-      "total_endurance_hours_cv": 0.466,
+      "total_endurance_hours_cv": 0.422,
       "total_sessions_median": 5,
       "total_sessions_iqr": [
         3,
         7
       ],
       "total_sessions_cv": 0.379,
-      "aerobic_points_median": 9.13,
+      "aerobic_points_median": 8.6,
       "aerobic_points_iqr": [
-        8.000600283905484,
-        10.807629282706323
+        7.345197077507505,
+        9.896685514858195
       ],
-      "aerobic_points_cv": 0.415
+      "aerobic_points_cv": 0.358
     },
     "by_sport": {
       "weekly_aerobic_points_median": {
         "run": 0.85,
-        "bike": 8.03,
+        "bike": 7.97,
         "swim": 0
       }
     },
     "impact": {
       "weekly_run_km_median": 8,
       "weekly_run_hours_median": 0.67,
-      "run_time_share_median": 0.078
+      "run_time_share_median": 0.074
     },
     "flags": {
       "high_cardio_low_impact": true
     }
   },
   "restart": {
-    "gap_days_any": 1,
+    "gap_days_any": 0,
     "reentry_level": 0,
     "week1": {
       "run": {
@@ -676,8 +766,8 @@
         "long_cap": 3.57
       },
       "bike": {
-        "volume_cap": 7.35,
-        "long_cap": 3.46
+        "volume_cap": 6.84,
+        "long_cap": 3.41
       },
       "swim": {
         "volume_cap": 0,
@@ -690,8 +780,8 @@
         "long_cap": 4.11
       },
       "bike": {
-        "volume_cap": 7.35,
-        "long_cap": 3.46
+        "volume_cap": 6.84,
+        "long_cap": 3.41
       },
       "swim": {
         "volume_cap": 0,
@@ -710,5 +800,77 @@
       90
     ],
     "transfer_confidence": "low"
+  },
+  "programming": {
+    "starter_targets": {
+      "as_of": "2026-02-04",
+      "mode": "pre_core_maintenance",
+      "by_sport": {
+        "bike": {
+          "weekly_hours_range": [
+            7.1,
+            8.6
+          ],
+          "long_hours_range": [
+            2.3,
+            3.4
+          ],
+          "sessions": 3,
+          "constraints": []
+        },
+        "run": {
+          "weekly_minutes_range": [
+            78,
+            97
+          ],
+          "sessions": 3,
+          "distance_km_cap_per_session": 5.5,
+          "constraints": [
+            "time_based",
+            "impact_limited"
+          ]
+        },
+        "swim": {
+          "weekly_minutes_range": [
+            45,
+            75
+          ],
+          "sessions": 2,
+          "constraints": [
+            "re_entry"
+          ]
+        }
+      },
+      "total_hours_range": [
+        9.2,
+        11.5
+      ],
+      "why": {
+        "recent3w": {
+          "bike_hours_p50": 7.52,
+          "run_minutes_p50": 77.63,
+          "swim_minutes_p50": 0
+        },
+        "primary56": {
+          "bike_hours_median": 6.84,
+          "run_km_median": 6.4,
+          "swim_km_median": 0
+        },
+        "last52w": {
+          "bike_hours_p50": 6.6,
+          "run_minutes_p50": 28.35,
+          "swim_minutes_p50": 37.45,
+          "swim_km_p50": 1.52
+        },
+        "flags": {
+          "high_cardio_low_impact": true
+        },
+        "gap_days": {
+          "run": 2,
+          "bike": 0,
+          "swim": 48
+        }
+      }
+    }
   }
 }

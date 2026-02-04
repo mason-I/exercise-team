@@ -1848,6 +1848,253 @@ function computeTransfer(baseline, composite) {
   return transfer;
 }
 
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function roundValue(value, decimals = 2) {
+  if (!Number.isFinite(value)) return 0;
+  return Number(value.toFixed(decimals));
+}
+
+function weekRangeEndingOn(endDate, weeksCount) {
+  const endWeekStart = weekStart(endDate);
+  const fullWeekEnd = addDays(endWeekStart, -1);
+  const start = addDays(fullWeekEnd, -(weeksCount * 7 - 1));
+  return { start, end: fullWeekEnd };
+}
+
+function computeWeeklySeries(activities, discipline, startDate, endDate, thresholds) {
+  if (!startDate || !endDate || startDate > endDate) return [];
+  const weeks = daterangeWeeks(startDate, endDate);
+  const weekMap = new Map();
+  for (const wk of weeks) {
+    weekMap.set(wk.toISOString(), { week_start: toIsoDate(wk), volume: 0, minutes: 0, load_points: 0 });
+  }
+
+  for (const activity of activities) {
+    if (normalizeSport(activity.sport_type || activity.type) !== discipline) continue;
+    const dt = activityDate(activity);
+    if (!dt || dt < startDate || dt > endDate) continue;
+    const wkKey = weekStart(dt).toISOString();
+    if (!weekMap.has(wkKey)) continue;
+    const bucket = weekMap.get(wkKey);
+    const durSec = activityDurationSec(activity) || 0;
+    const distKm = (activityDistanceM(activity) || 0) / 1000;
+    const load = computeActivityLoad(activity, discipline, thresholds);
+    if (discipline === "bike") {
+      bucket.volume += durSec / 3600;
+    } else {
+      bucket.volume += distKm;
+    }
+    bucket.minutes += durSec / 60;
+    bucket.load_points += load ? load.load_points : 0;
+  }
+
+  return weeks.map((wk) => {
+    const key = wk.toISOString();
+    const entry = weekMap.get(key) || { week_start: toIsoDate(wk), volume: 0, minutes: 0, load_points: 0 };
+    return {
+      week_start: entry.week_start,
+      volume: roundValue(entry.volume),
+      minutes: roundValue(entry.minutes),
+      load_points: roundValue(entry.load_points, 3),
+    };
+  });
+}
+
+function summarizeWeeklySeries(series) {
+  const volumes = series.map((w) => Number(w.volume) || 0);
+  const minutes = series.map((w) => Number(w.minutes) || 0);
+  const loads = series.map((w) => Number(w.load_points) || 0);
+  const nonzeroWeeks = series.filter((w) => (w.volume || 0) > 0 || (w.minutes || 0) > 0).length;
+  return {
+    weekly_volume_p50: roundValue(percentile(volumes, 50)),
+    weekly_volume_p75: roundValue(percentile(volumes, 75)),
+    weekly_minutes_p50: roundValue(percentile(minutes, 50)),
+    weekly_minutes_p75: roundValue(percentile(minutes, 75)),
+    weekly_load_points_p50: roundValue(percentile(loads, 50), 3),
+    weekly_load_points_p75: roundValue(percentile(loads, 75), 3),
+    max_weekly_volume: roundValue(Math.max(0, ...volumes)),
+    nonzero_weeks: nonzeroWeeks,
+  };
+}
+
+function computeRunStarterRange(transferRange, recentMinutesP50, highCardioLowImpact) {
+  if (!highCardioLowImpact) {
+    return transferRange || [30, 60];
+  }
+  const [transferLow, transferHigh] = transferRange || [45, 90];
+  if (!recentMinutesP50 || recentMinutesP50 <= 0) {
+    return [transferLow, transferHigh];
+  }
+  const low = Math.max(transferLow, recentMinutesP50);
+  const high = Math.max(transferHigh, recentMinutesP50 * 1.25);
+  return [Math.round(low), Math.round(Math.min(150, high))];
+}
+
+function computeStarterTargets(baseline, endDate) {
+  const bikeEnvelope = baseline.disciplines.bike.envelope || {};
+  const runEnvelope = baseline.disciplines.run.envelope || {};
+  const swimEnvelope = baseline.disciplines.swim.envelope || {};
+  const highCardioLowImpact = Boolean(baseline?.composite?.flags?.high_cardio_low_impact);
+
+  const bikeRecentHours = Number(bikeEnvelope.recent3_full_weeks?.weekly_volume_p50 || 0);
+  const bikeGap = baseline.disciplines.bike.gap_days_discipline;
+  let bikeWeeklyLow = 0;
+  let bikeWeeklyHigh = 0;
+  if (bikeGap != null && bikeGap <= 14 && bikeRecentHours >= 4) {
+    bikeWeeklyLow = bikeRecentHours * 0.95;
+    bikeWeeklyHigh = bikeRecentHours * 1.15;
+  } else {
+    const bikeMedian = Number(baseline.disciplines.bike.weekly.volume_median || 0);
+    const bikeRestart = Number(baseline.restart?.week1?.bike?.volume_cap || 0);
+    bikeWeeklyLow = Math.max(bikeRestart, bikeMedian * 0.85);
+    bikeWeeklyHigh = Math.max(bikeWeeklyLow, Math.min(bikeMedian * 1.05, bikeRestart * 1.2 || bikeMedian));
+  }
+  bikeWeeklyLow = roundValue(bikeWeeklyLow, 1);
+  bikeWeeklyHigh = roundValue(Math.max(bikeWeeklyLow, bikeWeeklyHigh), 1);
+  let bikeLongLow = roundValue(Math.min(2.5, bikeWeeklyLow * 0.33), 1);
+  let bikeLongHigh = roundValue(
+    Math.min(Number(baseline.disciplines.bike.long_session.weekly_max_median || 0), bikeWeeklyHigh * 0.4),
+    1
+  );
+  if (!bikeLongHigh || bikeLongHigh < bikeLongLow) bikeLongHigh = bikeLongLow;
+
+  const recentRunMinutes = Number(runEnvelope.recent3_full_weeks?.weekly_minutes_p50 || 0);
+  const runRange = computeRunStarterRange(
+    baseline.transfer?.run_intro_weekly_time_min_range || [45, 90],
+    recentRunMinutes,
+    highCardioLowImpact
+  );
+  let runDistanceCap = 6;
+  const runPace = baseline.disciplines.run.pace?.median_sec_per_km || 360;
+  if (runRange[0] > 0 && runPace > 0) {
+    const runWeeklyKmLow = (runRange[0] * 60) / runPace;
+    runDistanceCap = Math.min(6, (runWeeklyKmLow / 3) * 1.2);
+  }
+  const runRestartCap = baseline.restart?.reentry_level > 0 ? baseline.restart?.week1?.run?.volume_cap || 0 : 0;
+  if (runRestartCap > 0) {
+    runDistanceCap = Math.min(runDistanceCap, runRestartCap / 3);
+  }
+  runDistanceCap = roundValue(Math.max(1.5, runDistanceCap), 1);
+
+  const swimRecentMinutes = Number(swimEnvelope.recent3_full_weeks?.weekly_minutes_p50 || 0);
+  const swimLast52KmP50 = Number(swimEnvelope.last52w?.weekly_volume_p50 || 0);
+  let swimMinRange = [30, 50];
+  let swimConstraints = [];
+  if (swimRecentMinutes === 0 && swimLast52KmP50 > 0) {
+    swimMinRange = [45, 75];
+    swimConstraints = ["re_entry"];
+  } else if (swimRecentMinutes > 0) {
+    const swimP75 = Number(swimEnvelope.recent3_full_weeks?.weekly_minutes_p75 || swimRecentMinutes);
+    swimMinRange = [Math.round(Math.max(30, swimRecentMinutes * 0.9)), Math.round(Math.max(swimRecentMinutes, swimP75 * 1.1))];
+  }
+
+  const totalLow = roundValue(
+    bikeWeeklyLow + runRange[0] / 60 + swimMinRange[0] / 60,
+    1
+  );
+  const totalHigh = roundValue(
+    bikeWeeklyHigh + runRange[1] / 60 + swimMinRange[1] / 60,
+    1
+  );
+
+  return {
+    as_of: toIsoDate(endDate),
+    mode: "pre_core_maintenance",
+    by_sport: {
+      bike: {
+        weekly_hours_range: [bikeWeeklyLow, bikeWeeklyHigh],
+        long_hours_range: [bikeLongLow, bikeLongHigh],
+        sessions: Math.max(3, Math.round(baseline.disciplines.bike.weekly.sessions_median || 3)),
+        constraints: [],
+      },
+      run: {
+        weekly_minutes_range: runRange,
+        sessions: 3,
+        distance_km_cap_per_session: runDistanceCap,
+        constraints: highCardioLowImpact ? ["time_based", "impact_limited"] : ["time_based"],
+      },
+      swim: {
+        weekly_minutes_range: swimMinRange,
+        sessions: 2,
+        constraints: swimConstraints,
+      },
+    },
+    total_hours_range: [totalLow, totalHigh],
+    why: {
+      recent3w: {
+        bike_hours_p50: bikeRecentHours,
+        run_minutes_p50: recentRunMinutes,
+        swim_minutes_p50: swimRecentMinutes,
+      },
+      primary56: {
+        bike_hours_median: baseline.disciplines.bike.weekly.volume_median,
+        run_km_median: baseline.disciplines.run.weekly.volume_median,
+        swim_km_median: baseline.disciplines.swim.weekly.volume_median,
+      },
+      last52w: {
+        bike_hours_p50: bikeEnvelope.last52w?.weekly_volume_p50 || 0,
+        run_minutes_p50: runEnvelope.last52w?.weekly_minutes_p50 || 0,
+        swim_minutes_p50: swimEnvelope.last52w?.weekly_minutes_p50 || 0,
+        swim_km_p50: swimLast52KmP50,
+      },
+      flags: {
+        high_cardio_low_impact: highCardioLowImpact,
+      },
+      gap_days: {
+        run: baseline.disciplines.run.gap_days_discipline,
+        bike: baseline.disciplines.bike.gap_days_discipline,
+        swim: baseline.disciplines.swim.gap_days_discipline,
+      },
+    },
+  };
+}
+
+function computeDisciplineEnvelope(activities, discipline, endDate, thresholds, primaryMedian) {
+  const recentRange = weekRangeEndingOn(endDate, 3);
+  const last52Start = addDays(endDate, -364);
+  const recentSeries = computeWeeklySeries(activities, discipline, recentRange.start, recentRange.end, thresholds);
+  const last52Series = computeWeeklySeries(activities, discipline, last52Start, endDate, thresholds);
+  const recentSummary = summarizeWeeklySeries(recentSeries);
+  const last52Summary = summarizeWeeklySeries(last52Series);
+  const ratio =
+    primaryMedian > 0 ? roundValue(recentSummary.weekly_volume_p50 / primaryMedian, 3) : null;
+  let note = "stable";
+  if (ratio == null) note = "insufficient_primary";
+  else if (ratio >= 1.15) note = "above_primary";
+  else if (ratio <= 0.85) note = "below_primary";
+  return {
+    recent3_full_weeks: {
+      weeks: recentSeries.map((w) => w.week_start),
+      weekly_volume_p50: recentSummary.weekly_volume_p50,
+      weekly_volume_p75: recentSummary.weekly_volume_p75,
+      weekly_minutes_p50: recentSummary.weekly_minutes_p50,
+      weekly_minutes_p75: recentSummary.weekly_minutes_p75,
+      weekly_load_points_p50: recentSummary.weekly_load_points_p50,
+      weekly_load_points_p75: recentSummary.weekly_load_points_p75,
+      nonzero_weeks: recentSummary.nonzero_weeks,
+    },
+    last52w: {
+      weekly_volume_p50: last52Summary.weekly_volume_p50,
+      weekly_volume_p75: last52Summary.weekly_volume_p75,
+      weekly_minutes_p50: last52Summary.weekly_minutes_p50,
+      weekly_minutes_p75: last52Summary.weekly_minutes_p75,
+      weekly_load_points_p50: last52Summary.weekly_load_points_p50,
+      weekly_load_points_p75: last52Summary.weekly_load_points_p75,
+      max_weekly_volume: last52Summary.max_weekly_volume,
+      nonzero_weeks: last52Summary.nonzero_weeks,
+    },
+    trend: {
+      ratio_recent_to_primary: ratio,
+      note,
+    },
+  };
+}
+
 async function main() {
   const options = parseArgs();
   const endDate = options.endDate ? parseDate(options.endDate) : parseDate(toIsoDate(new Date()));
@@ -2176,6 +2423,18 @@ async function main() {
   const gapDaysAny = daysSinceLastAny(activities, endDate);
   baseline.restart = computeRestartCaps(baseline, gapDaysAny);
   baseline.transfer = computeTransfer(baseline, baseline.composite);
+  for (const discipline of ["run", "bike", "swim"]) {
+    baseline.disciplines[discipline].envelope = computeDisciplineEnvelope(
+      activities,
+      discipline,
+      endDate,
+      thresholds,
+      baseline.disciplines[discipline].weekly.volume_median || 0
+    );
+  }
+  baseline.programming = {
+    starter_targets: computeStarterTargets(baseline, endDate),
+  };
 
   dumpJson(options.outputJson, baseline);
 
@@ -2355,6 +2614,23 @@ async function main() {
       const range = baseline.transfer.run_intro_weekly_time_min_range;
       mdLines.push(`- Run intro weekly time: ${range[0]}–${range[1]} min`);
     }
+    mdLines.push("");
+  }
+
+  if (baseline.programming && baseline.programming.starter_targets) {
+    const starter = baseline.programming.starter_targets;
+    mdLines.push("## Starter Targets");
+    mdLines.push(`- Mode: ${starter.mode}`);
+    mdLines.push(`- Total hours range: ${starter.total_hours_range[0]}–${starter.total_hours_range[1]}`);
+    mdLines.push(
+      `- Bike: ${starter.by_sport.bike.weekly_hours_range[0]}–${starter.by_sport.bike.weekly_hours_range[1]} h (${starter.by_sport.bike.sessions} sessions)`
+    );
+    mdLines.push(
+      `- Run: ${starter.by_sport.run.weekly_minutes_range[0]}–${starter.by_sport.run.weekly_minutes_range[1]} min (${starter.by_sport.run.sessions} sessions, cap ${starter.by_sport.run.distance_km_cap_per_session} km/session)`
+    );
+    mdLines.push(
+      `- Swim: ${starter.by_sport.swim.weekly_minutes_range[0]}–${starter.by_sport.swim.weekly_minutes_range[1]} min (${starter.by_sport.swim.sessions} sessions)`
+    );
     mdLines.push("");
   }
 

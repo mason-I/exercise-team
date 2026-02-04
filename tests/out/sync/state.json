@@ -1,0 +1,11 @@
+{
+  "last_successful_sync_at": "2026-02-04T06:19:19.236Z",
+  "window_start": "2026-01-31T00:00:00.000Z",
+  "window_end": "2026-02-03T00:00:00.000Z",
+  "window_source": "explicit",
+  "fetched_count": 2,
+  "merged_count": 3,
+  "last_activity_id_seen": 3,
+  "last_activity_start_date_local_seen": "2026-02-03T07:00:00",
+  "source": "poll"
+}

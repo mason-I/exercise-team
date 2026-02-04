@@ -65,6 +65,11 @@ function validatePlan(plan, baseline, profile, prevPlan) {
   const triGoal = isTriGoal(profile);
   const swimBaselineZero = (baseline?.disciplines?.swim?.weekly?.volume_median || 0) <= 0.01;
   const highCardioLowImpact = Boolean(baseline?.composite?.flags?.high_cardio_low_impact);
+  const runSessions = Array.isArray(plan.sessions)
+    ? plan.sessions.filter((session) => session.discipline === "run")
+    : [];
+  const runSessionsCapped =
+    runSessions.length > 0 && runSessions.every((session) => session.distance_km_cap != null);
 
   const longCounts = { run: 0, bike: 0, swim: 0 };
   let swimSessions = 0;
@@ -117,7 +122,9 @@ function validatePlan(plan, baseline, profile, prevPlan) {
     }
     if (plannedVolume < 0) errors.push(`${discipline} planned volume negative`);
     const isSwimReentryException = discipline === "swim" && triGoal && swimBaselineZero;
-    if (confidence === "low" && plannedVolume > baselineWeekly && !isSwimReentryException) {
+    const isRunImpactException =
+      discipline === "run" && highCardioLowImpact && target.volume_min != null && runSessionsCapped;
+    if (confidence === "low" && plannedVolume > baselineWeekly && !isSwimReentryException && !isRunImpactException) {
       errors.push(`${discipline} planned volume exceeds baseline for low confidence`);
     }
     const longKey = discipline === "bike" ? "long_hours" : "long_km";

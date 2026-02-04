@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "Updated Name",
+    "sport_type": "Run",
+    "start_date_local": "2026-02-01T07:00:00",
+    "distance_m": 5100,
+    "moving_time_sec": 1520
+  },
+  {
+    "id": 3,
+    "name": "New Swim",
+    "sport_type": "Swim",
+    "start_date_local": "2026-02-03T07:00:00",
+    "distance_m": 1500,
+    "moving_time_sec": 2100
+  }
+]

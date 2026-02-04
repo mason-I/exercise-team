@@ -1,0 +1,21 @@
+{
+  "athlete_meta": {
+    "ftp_w": 250,
+    "hr_lthr_bpm": 160
+  },
+  "disciplines": {
+    "run": {
+      "threshold": {
+        "vthr_mps": 3.5
+      }
+    },
+    "bike": {
+      "threshold": {}
+    },
+    "swim": {
+      "threshold": {
+        "css_sec_per_100m": 120
+      }
+    }
+  }
+}
