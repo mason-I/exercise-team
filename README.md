@@ -2,6 +2,38 @@
 
 This project gives you a personal AI coach for run, bike, swim and strength planning.
 
+## Install
+
+From this directory:
+
+```bash
+bash install.sh
+```
+
+Or remote one-command install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mason-I/exercise-team/main/install.sh | bash
+```
+
+## Strava API Setup (Required)
+
+Before install/bootstrap, create a Strava API app to get `Client ID` and `Client Secret`:
+
+1. Go to [https://www.strava.com/settings/api](https://www.strava.com/settings/api)
+2. Click `Create & Manage Your App`
+3. Create an application
+4. Set `Authorization Callback Domain` to `localhost`
+5. Save and copy your `Client ID` and `Client Secret`
+
+Then run:
+
+```bash
+APP_STRAVA_CLIENT_ID="<your_client_id>" \
+APP_STRAVA_CLIENT_SECRET="<your_client_secret>" \
+bash install.sh
+```
+
 It is designed for weekly use:
 - Build a realistic plan for your upcoming week
 - Sync sessions to your calendar

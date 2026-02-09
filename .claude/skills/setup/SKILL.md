@@ -63,6 +63,8 @@ bun .claude/skills/setup/scripts/setup_orchestrator.js \
 - For calendar events, use `confirm_apply` default:
   - produce dry-run preview,
   - only apply writes after explicit confirmation.
+- When `status: "needs_user_input"`, you MUST use the `AskUserQuestion` tool.
+- Do not ask onboarding questions in plain assistant text. Always use `AskUserQuestion` so answers are captured reliably.
 
 ## Handling orchestrator outputs
 The script returns JSON. Drive user prompts from `status`:
@@ -75,11 +77,11 @@ The script returns JSON. Drive user prompts from `status`:
   - Then rerun `/setup`.
 
 - `status: "needs_user_input"` + `stage: "intake"`
-  - Ask all `needs_user_input` questions returned by the script.
+  - Ask all `needs_user_input` questions returned by the script using `AskUserQuestion`.
   - Update artifacts from answers, then rerun orchestrator with `--resume`.
 
 - `status: "needs_user_input"` + `stage: "calendar_preview"`
-  - Ask for calendar write confirmation.
+  - Ask for calendar write confirmation using `AskUserQuestion`.
   - Re-run with one of:
     - `--calendar-sync-confirm yes`
     - `--calendar-sync-confirm no`
@@ -91,6 +93,14 @@ The script returns JSON. Drive user prompts from `status`:
 When continuing from partial progress:
 
 `/setup` can be rerun directly after answering prompts; `--resume` is optional.
+
+## AskUserQuestion mapping (required)
+When the orchestrator returns `needs_user_input`, convert each entry into an `AskUserQuestion` prompt:
+- Use `needs_user_input[i].id` as the stable identifier you track when writing artifacts.
+- Use `needs_user_input[i].question` as the user-facing prompt.
+- If `needs_user_input[i].options` is present/non-empty, use those as the choices.
+- If no options are present, allow a free-form answer.
+- Include `needs_user_input[i].reason` briefly as context inside the question if helpful (keep it short).
 
 ## Manual fallback commands (only if orchestrator fails)
 - Install bootstrap:
