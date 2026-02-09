@@ -306,6 +306,96 @@ function buildCalendarFreeWindows(weekStartIso, busyWindows) {
   return freeByDate;
 }
 
+function safeReadJson(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSport(value) {
+  if (!value) return null;
+  const lowered = String(value).toLowerCase().replace(/\s+/g, "");
+  if (lowered.includes("run")) return "run";
+  if (lowered.includes("ride") || lowered.includes("bike") || lowered.includes("cycl")) return "bike";
+  if (lowered.includes("swim")) return "swim";
+  if (
+    ["workout", "weighttraining", "strengthtraining", "crossfit", "functionaltraining",
+     "gym", "bodyweight", "hiit", "yoga", "pilates", "mobility", "core"]
+      .some((key) => lowered.includes(key))
+  )
+    return "strength";
+  return null;
+}
+
+function buildWeekStatus(weekStartIso, weekEndExclusiveIso, todayIso) {
+  const activities = safeReadJson(PATHS.external.stravaActivities) || [];
+  const today = todayIso || (process.env.COACH_TODAY ? String(process.env.COACH_TODAY) : new Date().toISOString().slice(0, 10));
+
+  const days = [];
+  const byDiscipline = {};
+  let totalMin = 0;
+  let totalSessions = 0;
+
+  for (let i = 0; i < 7; i += 1) {
+    const date = addDaysIso(weekStartIso, i);
+    if (!date) continue;
+    const weekday = isoWeekday(date);
+    const status = date < today ? "past" : date === today ? "today" : "future";
+
+    const dayActivities = activities
+      .filter((act) => {
+        const actDate = String(act.start_date_local || act.start_date || "").slice(0, 10);
+        return actDate === date;
+      })
+      .map((act) => {
+        const timeSec = Number(act.moving_time_sec || act.moving_time || act.elapsed_time_sec || act.elapsed_time || 0);
+        const durationMin = Math.round(timeSec / 60);
+        const discipline = normalizeSport(act.sport_type || act.type);
+        const rawDist = act.distance_m || act.distance;
+        const distanceKm = Number.isFinite(Number(rawDist)) ? Math.round(Number(rawDist) / 100) / 10 : null;
+        return {
+          name: act.name || "Untitled",
+          sport_type: act.sport_type || act.type || null,
+          discipline,
+          duration_min: durationMin,
+          distance_km: distanceKm,
+        };
+      });
+
+    for (const act of dayActivities) {
+      totalMin += act.duration_min;
+      totalSessions += 1;
+      if (act.discipline) {
+        byDiscipline[act.discipline] = (byDiscipline[act.discipline] || 0) + act.duration_min / 60;
+      }
+    }
+
+    days.push({ date, weekday, status, completed: dayActivities });
+  }
+
+  // Round discipline hours to 2dp
+  for (const key of Object.keys(byDiscipline)) {
+    byDiscipline[key] = Math.round(byDiscipline[key] * 100) / 100;
+  }
+
+  const daysRemaining = days.filter((d) => d.status === "future").length + (days.some((d) => d.status === "today") ? 1 : 0);
+
+  return {
+    today,
+    today_weekday: isoWeekday(today),
+    week_start: weekStartIso,
+    days,
+    summary: {
+      total_hours_completed: Math.round((totalMin / 60) * 100) / 100,
+      total_sessions_completed: totalSessions,
+      by_discipline: byDiscipline,
+      days_remaining: daysRemaining,
+    },
+  };
+}
+
 function detectRaceTaperWeek(plan, strategy) {
   const strategyIntent = String(strategy?.phase_intent || "").toLowerCase();
   const planPhase = String(plan?.phase || "").toLowerCase();
@@ -439,11 +529,17 @@ async function main() {
     Math.floor(schedulableCount * Number(schedulingPolicy.weekday_change_budget_ratio || 0.2))
   );
 
+  const weekStatus = buildWeekStatus(weekStart, weekEndExclusive);
+  const prevWeekStart = addDaysIso(weekStart, -7);
+  const previousWeek = prevWeekStart ? buildWeekStatus(prevWeekStart, weekStart) : null;
+
   const context = {
     generated_at: new Date().toISOString(),
-    schema_version: 3,
+    schema_version: 5,
     week_start: weekStart,
     week_end_exclusive: weekEndExclusive,
+    week_status: weekStatus,
+    previous_week: previousWeek,
     timezone:
       options.timezone ||
       profile?.preferences?.timezone ||

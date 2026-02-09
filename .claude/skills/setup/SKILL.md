@@ -178,8 +178,16 @@ If the orchestrator returns:
 - `status: "completed"` -- Plan is generated. Continue to Step 2.
 
 ### Step 2: Present the plan to the athlete
-Read the generated plan file at the path returned in `summary.generated_plan` (typically `data/coach/plans/<week_start>.json`). Present a coaching-style weekly summary:
-- Day-by-day sessions: discipline, type, duration, and intent.
+Read the generated plan file at the path returned in `summary.generated_plan` (typically `data/coach/plans/<week_start>.json`). Also run the scheduling context builder to get current-week actuals:
+
+```bash
+bun .claude/skills/plan-week/scripts/build_scheduling_context.js --plan data/coach/plans/<week_start>.json
+```
+
+Reference `week_status` from the scheduling context output to state what day it is today, what's already been done this week, and which days remain. **Do not estimate current-week volume from baseline averages — use `week_status.summary` actuals.**
+
+Present a coaching-style weekly summary:
+- Day-by-day sessions: discipline, type, duration, and intent (only today and future days).
 - Key prescriptions and intensity targets.
 - Rest day placement and weekly load shape.
 - Any risk flags or notes.

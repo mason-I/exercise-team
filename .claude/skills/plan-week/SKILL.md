@@ -48,18 +48,19 @@ bun .claude/skills/plan-week/scripts/resolve_week_start.js --mode <this|next>
    - `data/coach/baseline.json`
    - `data/coach/strategy.json`
    - `data/system/strava/schedule_preferences_inferred.json`
-6. Use `baseline.discipline_baselines` to set per-discipline volume targets. Each discipline's weekly hours should be within +/-15% of its `weekly_hours_avg` unless strategy/goals call for a deliberate shift. Use `baseline.recent_weekly_totals` to understand the athlete's actual training rhythm and session patterns. If `profile.preferences.time_budget_hours` has null values, use `baseline.derived_time_budget` instead.
-7. Generate sessions first (discipline intent + duration), respecting the time budget from step 6.
-8. Build scheduling context:
+6. **Current-week and previous-week grounding (mandatory before generating sessions)**: After running `build_scheduling_context.js`, check `scheduling_context.week_status` and `scheduling_context.previous_week`. For the current week: `today_weekday` tells you what day it is, `days[].completed` shows actual Strava activities already done, `summary.total_hours_completed` is the real load so far, `summary.days_remaining` tells you how many days are left to schedule. For the previous week: `previous_week.days[].completed` shows what was actually done each day last week, and `previous_week.summary` gives total hours and per-discipline breakdown. Use previous-week day-level detail for load sequencing across the week boundary (e.g. if Sunday was hard, Monday should be easy) and session-level progression (e.g. last Saturday's long ride was 3h, build to 3:15h). **Never estimate current-week or previous-week load from baseline averages — use these actuals.** If planning for "this week" mid-week, only generate sessions for today and future days; do not overwrite past days.
+7. Use `baseline.discipline_baselines` to set per-discipline volume targets. Each discipline's weekly hours should be within +/-15% of its `weekly_hours_avg` unless strategy/goals call for a deliberate shift. Use `baseline.recent_weekly_totals` to understand the athlete's actual training rhythm and session patterns. If `profile.preferences.time_budget_hours` has null values, use `baseline.derived_time_budget` instead.
+8. Generate sessions first (discipline intent + duration), respecting the time budget from step 7. For mid-week plans, account for `week_status.summary.total_hours_completed` already consumed.
+9. Build scheduling context:
 ```bash
 bun .claude/skills/plan-week/scripts/build_scheduling_context.js --plan data/coach/plans/<week_start>.json
 ```
-9. Use model-first habit-preserving scheduling:
+10. Use model-first habit-preserving scheduling:
    - classify canonical session type first,
    - match discipline + weekday + canonical type anchors,
    - keep same-day shifts before changing days,
    - deviate only for hard constraints or safety.
-10. Write required scheduling/session fields for every schedulable session:
+11. Write required scheduling/session fields for every schedulable session:
    - `scheduled_start_local`
    - `scheduled_end_local`
    - `priority` (`key|support|optional`)
@@ -74,22 +75,22 @@ bun .claude/skills/plan-week/scripts/build_scheduling_context.js --plan data/coa
    - `deviation_reason`
    - `exception_code` (`null` or allowed code)
    - `scheduling_notes`
-11. Write required plan-level scheduling fields:
+12. Write required plan-level scheduling fields:
    - `scheduling_context`
    - `scheduling_decisions`
    - `scheduling_decisions.habit_adherence_summary`
    - `scheduling_risk_flags`
-12. For each trainable session (`run|bike|swim|strength`) write:
+13. For each trainable session (`run|bike|swim|strength`) write:
    - discipline structured prescription object (`run_prescription|bike_prescription|swim_prescription|strength_prescription`)
    - `progression_trace` with explicit prior-week comparison and goal link
-13. For every non-rest schedulable session, include `nutrition_prescription`.
-14. Ask-before-downshift policy:
+14. For every non-rest schedulable session, include `nutrition_prescription`.
+15. Ask-before-downshift policy:
    - if fatigue/adherence signals imply overload risk, do not auto-downshift;
    - populate top-level `needs_user_input` options and defer the downshift until user selects an option.
-15. Update `data/coach/progression_state.json` from latest plan, prior-week plan, goals, strategy, baseline, and latest check-in.
-16. For bike sessions, obey `preferences.bike_capabilities.resolved` no-power guardrails.
-17. AskUserQuestion only if no feasible placement satisfies hard constraints and weekday-change budget.
-18. Final response style:
+16. Update `data/coach/progression_state.json` from latest plan, prior-week plan, goals, strategy, baseline, and latest check-in.
+17. For bike sessions, obey `preferences.bike_capabilities.resolved` no-power guardrails.
+18. AskUserQuestion only if no feasible placement satisfies hard constraints and weekday-change budget.
+19. Final response style:
    - Start with all remaining sessions in the plan week from today onward.
    - Exclude already-past sessions for current week planning.
    - Add short rationale/risk note and one short check-in question.
