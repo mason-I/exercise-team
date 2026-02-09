@@ -1,0 +1,14 @@
+{
+  "primary_goal": {
+    "name": "",
+    "date": "YYYY-MM-DD",
+    "disciplines": []
+  },
+  "phase_intent": "",
+  "discipline_focus": {
+    "run": "",
+    "bike": "",
+    "swim": ""
+  },
+  "weekly_priorities": []
+}

@@ -1,0 +1,17 @@
+{
+  "as_of_date": "YYYY-MM-DD",
+  "confidence_by_discipline": {
+    "run": "low",
+    "bike": "low",
+    "swim": "low"
+  },
+  "current_load_tolerance": {
+    "weekly_hours_range": [
+      0,
+      0
+    ],
+    "notes": ""
+  },
+  "risk_flags": [],
+  "evidence": []
+}

@@ -1,0 +1,139 @@
+{
+  "week_start": "YYYY-MM-DD",
+  "time_budget_hours": {
+    "min": 0,
+    "typical": 0,
+    "max": 0
+  },
+  "scheduling_context": {
+    "timezone": "UTC",
+    "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
+    "scheduling_policy": {
+      "same_day_shift_first": true,
+      "is_race_taper_week": false,
+      "weekday_change_budget_ratio": 0.2,
+      "time_deviation_caps_min": {
+        "key": 90,
+        "support": 150,
+        "optional": 240
+      },
+      "race_taper_multiplier": 1.5,
+      "race_taper_weekday_change_budget_ratio": 0.35,
+      "off_habit_weekday_budget": 1,
+      "schedulable_session_count": 1
+    }
+  },
+  "scheduling_decisions": {
+    "placements": [],
+    "adjustments": [],
+    "habit_adherence_summary": {
+      "matched_weekday_count": 0,
+      "matched_time_within_cap_count": 0,
+      "off_habit_weekday_count": 0,
+      "off_habit_weekday_budget": 0,
+      "overall_habit_adherence_score": 0
+    }
+  },
+  "needs_user_input": [],
+  "scheduling_risk_flags": [],
+  "sessions": [
+    {
+      "id": "session-1",
+      "date": "YYYY-MM-DD",
+      "discipline": "run",
+      "type": "easy",
+      "canonical_type": "easy",
+      "duration_min": 30,
+      "scheduled_start_local": "YYYY-MM-DDTHH:MM:SS",
+      "scheduled_end_local": "YYYY-MM-DDTHH:MM:SS",
+      "priority": "support",
+      "load_class": "easy",
+      "habit_anchor": {
+        "level_used": "discipline_weekday_type",
+        "target_start_local": "YYYY-MM-DDTHH:MM:SS",
+        "confidence": "high",
+        "weekday_match": true
+      },
+      "habit_match_score": 92,
+      "deviation_minutes": 20,
+      "deviation_reason": "",
+      "exception_code": null,
+      "scheduling_notes": "",
+      "progression_trace": {
+        "phase_mode": "maintain",
+        "progression_comparison": "none",
+        "prior_week_session_id": null,
+        "progression_decision": "Baseline week created with no prior comparable session.",
+        "progressed_fields": [],
+        "load_delta_summary": "Baseline",
+        "regression_rule": "If fatigue or pain rises, downshift only after user confirmation.",
+        "goal_link": "primary_goal:maintain_consistency"
+      },
+      "intent": "",
+      "success_criteria": [],
+      "run_prescription": {
+        "session_objective": "Aerobic base support run",
+        "target_system": "aerobic_endurance",
+        "blocks": [
+          {
+            "block_label": "steady_easy",
+            "duration_min": 30,
+            "target_metric": "rpe",
+            "target_range": "RPE 2-4",
+            "terrain_or_mode": "flat road",
+            "execution_cues": [
+              "Relaxed shoulders",
+              "Nasal-breathing check every 10 min"
+            ],
+            "success_criteria": [
+              "Even effort",
+              "No pain escalation"
+            ],
+            "failure_adjustment": "Reduce block by 20% and keep RPE <=3."
+          }
+        ],
+        "impact_management": {
+          "surface": "soft/forgiving where possible",
+          "cadence_cue": "light quick steps",
+          "stride_cue": "shorten stride if impact rises"
+        },
+        "success_criteria": [
+          "Smooth form",
+          "Stable breathing"
+        ],
+        "failure_adjustment": "Switch to run-walk if niggle appears."
+      },
+      "intensity_prescription": {
+        "primary_metric": "rpe",
+        "hr_zone_range": [],
+        "hr_bpm_range": [],
+        "rpe_range": [
+          2,
+          4
+        ],
+        "power_w_range": [],
+        "if_range": [],
+        "effort_hint": ""
+      },
+      "nutrition_prescription": {
+        "pre_session": "Hydrate and consume a light carbohydrate snack 30-60 min pre-session.",
+        "during_session": "Water only for easy session under 60 min.",
+        "post_session": "Consume protein + carbohydrate within 60 minutes.",
+        "daily_recovery_target": "Meet daily hydration and protein baseline.",
+        "session_specific_adjustment": "Increase sodium in hot conditions.",
+        "compliance_markers": [
+          "pre_session_complete",
+          "post_session_recovery_meal_complete"
+        ]
+      },
+      "calendar": {
+        "provider": "google",
+        "calendar_id": "primary",
+        "event_id": null,
+        "status": "unscheduled",
+        "last_synced_at": null,
+        "last_sync_action": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "athlete": {
+    "name": "",
+    "age": 0,
+    "weight_kg": 0,
+    "experience_years": 0
+  },
+  "preferences": {
+    "week_start": "monday",
+    "rest_day": "sunday",
+    "time_budget_hours": {
+      "min": null,
+      "typical": null,
+      "max": null
+    },
+    "fixed_sessions": [],
+    "bike_capabilities": {
+      "power_meter_available": null,
+      "heart_rate_sensor_available": null,
+      "resolved": {
+        "no_power_mode": true,
+        "hr_available": false,
+        "source": {},
+        "evaluated_at": ""
+      }
+    },
+    "session_type_preferences": {
+      "run": {
+        "prefer": [],
+        "avoid": [],
+        "notes": ""
+      },
+      "bike": {
+        "prefer": [],
+        "avoid": [],
+        "notes": ""
+      },
+      "swim": {
+        "prefer": [],
+        "avoid": [],
+        "notes": ""
+      },
+      "strength": {
+        "prefer": [],
+        "avoid": [],
+        "notes": ""
+      },
+      "notes": ""
+    },
+    "strength": {
+      "enabled": true,
+      "sessions_per_week": 2,
+      "session_duration_min": 35,
+      "focus": "full_body",
+      "equipment": [],
+      "notes": ""
+    }
+  },
+  "health": {
+    "current_niggles": [],
+    "injury_history_12mo": []
+  },
+  "nutrition": {
+    "daily_calories_target": 0,
+    "notes": ""
+  }
+}
