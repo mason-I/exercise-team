@@ -11,6 +11,8 @@ function parseArgs() {
     activities: PATHS.external.stravaActivities,
     state: PATHS.external.stravaSyncState,
     fetchScript: ".claude/skills/setup/scripts/fetch_strava_activities.js",
+    snapshotScript: ".claude/skills/coach-sync/scripts/build_strava_snapshot.js",
+    baselineScript: ".claude/skills/coach-sync/scripts/build_baseline.js",
     lookbackHours: 48,
     bootstrapWindowDays: 14,
     startDate: null,
@@ -19,6 +21,7 @@ function parseArgs() {
     fetchedInput: null,
     keepTemp: false,
     noAuth: false,
+    rebuildCoachArtifacts: true,
     loop: false,
     intervalMin: 5,
     overnightIntervalMin: 30,
@@ -32,6 +35,8 @@ function parseArgs() {
     if (arg === "--activities") options.activities = args[i + 1];
     if (arg === "--state") options.state = args[i + 1];
     if (arg === "--fetch-script") options.fetchScript = args[i + 1];
+    if (arg === "--snapshot-script") options.snapshotScript = args[i + 1];
+    if (arg === "--baseline-script") options.baselineScript = args[i + 1];
     if (arg === "--lookback-hours") options.lookbackHours = Number(args[i + 1]);
     if (arg === "--bootstrap-window-days") options.bootstrapWindowDays = Number(args[i + 1]);
     if (arg === "--start-date") options.startDate = args[i + 1];
@@ -40,6 +45,7 @@ function parseArgs() {
     if (arg === "--fetched-input") options.fetchedInput = args[i + 1];
     if (arg === "--keep-temp") options.keepTemp = true;
     if (arg === "--no-auth") options.noAuth = true;
+    if (arg === "--no-rebuild-coach-artifacts") options.rebuildCoachArtifacts = false;
     if (arg === "--loop") options.loop = true;
     if (arg === "--interval-min") options.intervalMin = Number(args[i + 1]);
     if (arg === "--overnight-interval-min") options.overnightIntervalMin = Number(args[i + 1]);
@@ -196,6 +202,28 @@ function runFetchScript(options, startIso, endIso) {
   return loadJsonArray(options.tempOut);
 }
 
+function rebuildCoachArtifacts(options) {
+  // After activities merge, keep coach artifacts in-sync (snapshot + baseline).
+  execFileSync("bun", [options.snapshotScript, "--input", options.activities, "--out", PATHS.coach.snapshot], {
+    stdio: "inherit",
+  });
+  execFileSync(
+    "bun",
+    [
+      options.baselineScript,
+      "--snapshot",
+      PATHS.coach.snapshot,
+      "--activities",
+      options.activities,
+      "--profile",
+      PATHS.coach.profile,
+      "--out",
+      PATHS.coach.baseline,
+    ],
+    { stdio: "inherit" }
+  );
+}
+
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
@@ -252,6 +280,10 @@ async function syncOnce(options) {
     source: "poll",
   };
   writeJson(options.state, newState);
+
+  if (options.rebuildCoachArtifacts) {
+    rebuildCoachArtifacts(options);
+  }
 
   if (!options.keepTemp && !options.fetchedInput && fs.existsSync(options.tempOut)) {
     fs.rmSync(options.tempOut, { force: true });
