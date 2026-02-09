@@ -11,21 +11,35 @@ All coaching decisions are model-driven. The `data/coach/` directory is the sour
 - `data/coach/strava_snapshot.json`
 - `data/coach/profile.json`
 - `data/coach/goals.json`
-- `data/coach/baseline.json`
+- `data/coach/baseline_raw.json` (deterministic aggregates)
+- `data/coach/baseline.json` (model-interpreted baseline)
 - `data/coach/strategy.json`
 - `data/coach/progression_state.json`
 - `data/coach/plans/YYYY-MM-DD.json`
 - `data/coach/checkins/YYYY-MM-DD.json` (optional)
 - `data/coach/reports/*`
 
-## Baseline schema (minimum required fields)
+## Baseline Raw schema (`baseline_raw.json` -- deterministic output)
 ```json
 {
   "as_of_date": "YYYY-MM-DD",
   "confidence_by_discipline": { "run": "low|medium|high", "bike": "...", "swim": "..." },
   "current_load_tolerance": { "weekly_hours_range": [0, 0], "notes": "" },
   "risk_flags": [],
+  "discipline_baselines": {},
+  "recent_weekly_totals": [],
+  "derived_time_budget": { "min": 0, "typical": 0, "max": 0, "source": "baseline_auto", "notes": "" },
   "evidence": []
+}
+```
+
+## Baseline schema (`baseline.json` -- model-interpreted, includes all raw fields plus)
+```json
+{
+  "risk_assessment": "Contextual risk narrative grounded in raw risk_flags + recent activity",
+  "confidence_rationale": { "run": "explanation...", "bike": "explanation...", "swim": "explanation..." },
+  "load_narrative": "Human-readable training load trajectory description",
+  "time_budget_rationale": "What the derived time budget means in context"
 }
 ```
 

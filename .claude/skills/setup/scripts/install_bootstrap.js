@@ -187,7 +187,7 @@ function collectArtifacts(projectDir) {
     PATHS.coach.snapshot,
     PATHS.coach.profile,
     PATHS.coach.goals,
-    PATHS.coach.baseline,
+    PATHS.coach.baselineRaw,
     PATHS.coach.strategy,
   ];
   return relPaths.map((relPath) => safeStat(resolveProjectPath(projectDir, relPath)));

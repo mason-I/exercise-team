@@ -121,8 +121,8 @@ function main() {
   if (cloneJsonTemplate(projectDir, "goals.json", path.join(projectDir, ...PATHS.coach.goals.split("/")))) {
     created.files.push("data/coach/goals.json");
   }
-  if (cloneJsonTemplate(projectDir, "baseline.json", path.join(projectDir, ...PATHS.coach.baseline.split("/")), { as_of_date: todayIso })) {
-    created.files.push("data/coach/baseline.json");
+  if (cloneJsonTemplate(projectDir, "baseline.json", path.join(projectDir, ...PATHS.coach.baselineRaw.split("/")), { as_of_date: todayIso })) {
+    created.files.push("data/coach/baseline_raw.json");
   }
   if (cloneJsonTemplate(projectDir, "strategy.json", path.join(projectDir, ...PATHS.coach.strategy.split("/")))) {
     created.files.push("data/coach/strategy.json");

@@ -110,7 +110,7 @@ function buildStravaPipelineSteps(options) {
     },
     {
       script: ".claude/skills/coach-sync/scripts/build_baseline.js",
-      args: ["--snapshot", options.snapshotPath, "--activities", options.outActivities, "--out", PATHS.coach.baseline],
+      args: ["--snapshot", options.snapshotPath, "--activities", options.outActivities, "--out", PATHS.coach.baselineRaw],
       optional: false,
       label: "Build baseline from Strava",
     },

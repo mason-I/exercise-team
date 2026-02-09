@@ -41,16 +41,34 @@ agent: general-purpose
 ```bash
 bun .claude/skills/plan-week/scripts/resolve_week_start.js --mode <this|next>
 ```
-5. Ground decisions in:
-   - `data/coach/strava_snapshot.json`
+5. Ground decisions in (read all before generating sessions):
+   - `data/coach/strava_snapshot.json` -- after reading, interpret: What does the athlete's training actually look like? What's the session type mix (endurance/intensity/recovery)? Is volume building, stable, or declining? Any gaps or anomalies? What data quality constraints exist (power/HR coverage) that affect viable prescription types?
    - `data/coach/profile.json`
    - `data/coach/goals.json`
-   - `data/coach/baseline.json`
+   - `data/coach/baseline_raw.json` (raw deterministic aggregates)
+   - `data/coach/baseline.json` (model-interpreted baseline -- see step 5a)
    - `data/coach/strategy.json`
-   - `data/system/strava/schedule_preferences_inferred.json`
+   - `data/system/strava/schedule_preferences_inferred.json` (statistical habit anchors)
+5a. **Schedule preference interpretation (model-driven)**: After reading `schedule_preferences_inferred.json`, apply coaching judgment before using for placement:
+   - Re-classify `canonical_type` from activity names semantically (regex often gets this wrong -- "Hill sprints with the lads" = interval, "Coffee ride" = recovery/social).
+   - Identify true anchor days (>75% weekly presence) vs. sporadic patterns. Prefer true anchors, be flexible with sporadic ones.
+   - Check for recent pattern shifts (if an anchor hasn't been hit in 2+ weeks, it may be outdated -- flag to the athlete).
+   - Identify day-pairing habits the statistics miss (e.g., always rides Wed + Sat, or strength always follows a hard ride day).
+5b. **Baseline interpretation (model-driven)**: Read `data/coach/baseline_raw.json`. If `data/coach/baseline.json` does not exist, or its `as_of_date` is older than `baseline_raw.json`'s, synthesize a new `data/coach/baseline.json` by copying all raw fields and adding these model-generated fields:
+   - `risk_assessment` (string): Contextual risk narrative. Don't just echo raw `risk_flags` -- reason about them using recent activity evidence. E.g., "Shin splints flagged but last 3 weeks show pain-free runs at increasing duration, so progression confidence is moderate."
+   - `confidence_rationale` (object keyed by discipline): Explain why each discipline's confidence level is what it is, referencing session counts and consistency patterns.
+   - `load_narrative` (string): Describe the training load trajectory in human terms, referencing `recent_weekly_totals` week-by-week.
+   - `time_budget_rationale` (string): Explain what the derived time budget means in context -- flag any inflating factors (social rides, events) or genuine low weeks.
+   Ground every claim in the raw numbers. Write result to `data/coach/baseline.json`.
 6. **Current-week and previous-week grounding (mandatory before generating sessions)**: After running `build_scheduling_context.js`, check `scheduling_context.week_status` and `scheduling_context.previous_week`. For the current week: `today_weekday` tells you what day it is, `days[].completed` shows actual Strava activities already done, `summary.total_hours_completed` is the real load so far, `summary.days_remaining` tells you how many days are left to schedule. For the previous week: `previous_week.days[].completed` shows what was actually done each day last week, and `previous_week.summary` gives total hours and per-discipline breakdown. Use previous-week day-level detail for load sequencing across the week boundary (e.g. if Sunday was hard, Monday should be easy) and session-level progression (e.g. last Saturday's long ride was 3h, build to 3:15h). **Never estimate current-week or previous-week load from baseline averages — use these actuals.** If planning for "this week" mid-week, only generate sessions for today and future days; do not overwrite past days.
+6a. **Check-in awareness (if available)**: Read recent check-ins from `data/coach/checkins/` (last 1-2 weeks). If check-ins exist, look for:
+   - Fatigue or energy trends (increasing fatigue = consider reducing volume or intensity this week).
+   - Sleep quality signals (poor sleep = favor easier sessions, avoid early-morning intensity).
+   - Persistent soreness in specific areas (correlate with session types -- if quads are sore, don't stack bike intervals).
+   - Motivation signals (if the athlete is dreading a discipline, consider variety or swaps).
+   - If no check-ins exist, proceed without -- do not fabricate subjective data.
 7. Use `baseline.discipline_baselines` to set per-discipline volume targets. Each discipline's weekly hours should be within +/-15% of its `weekly_hours_avg` unless strategy/goals call for a deliberate shift. Use `baseline.recent_weekly_totals` to understand the athlete's actual training rhythm and session patterns. If `profile.preferences.time_budget_hours` has null values, use `baseline.derived_time_budget` instead.
-8. Generate sessions first (discipline intent + duration), respecting the time budget from step 7. For mid-week plans, account for `week_status.summary.total_hours_completed` already consumed.
+8. Generate sessions (discipline intent + duration), respecting the time budget from step 7. For mid-week plans, account for `week_status.summary.total_hours_completed` already consumed. Session count, discipline mix, and durations are model decisions grounded in `baseline.discipline_baselines`. Do not use fewer sessions or lower volume than the athlete's baseline unless strategy, goals, or fatigue explicitly call for a reduction. The baseline reflects what the athlete has proven they can sustain.
 9. Build scheduling context:
 ```bash
 bun .claude/skills/plan-week/scripts/build_scheduling_context.js --plan data/coach/plans/<week_start>.json

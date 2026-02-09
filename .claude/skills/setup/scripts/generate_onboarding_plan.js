@@ -411,97 +411,36 @@ function makeRestSession({ date, id, intent }) {
   };
 }
 
-function buildSessions({ weekStartIso, restDay, goalLink, calendarId }) {
-  const weekDates = Array.from({ length: 7 }, (_, index) => addDaysIso(weekStartIso, index));
-  const byDay = {};
-  for (const iso of weekDates) {
-    byDay[toDayName(parseDate(iso))] = iso;
+// Session builder helpers (makeBikeSession, makeRunSession, etc.) are retained above
+// for reference but are no longer called. Session design is now fully model-driven.
+// The model generates sessions after reading baseline, profile, goals, strategy, and
+// schedule preferences -- see setup/SKILL.md Phase 3.
+
+function buildSessions() {
+  // Returns empty array. The model populates sessions after the shell is created.
+  return [];
+}
+
+function resolveTimeBudget(profile, baseline) {
+  const pref = profile?.preferences?.time_budget_hours;
+  if (pref && Number.isFinite(Number(pref.typical)) && Number(pref.typical) > 0) {
+    return {
+      min: Number(pref.min) || 0,
+      typical: Number(pref.typical),
+      max: Number(pref.max) || Number(pref.typical) * 1.15,
+      source: "profile",
+    };
   }
-
-  const effectiveRestDay = typeof restDay === "string" && byDay[restDay.toLowerCase()] ? restDay.toLowerCase() : "monday";
-  const sessions = [];
-
-  for (const day of ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]) {
-    const date = byDay[day];
-    if (!date) continue;
-    if (day === effectiveRestDay) {
-      sessions.push(
-        makeRestSession({
-          date,
-          id: `rest_${day}_${date}`,
-          intent: `Preferred recovery day (${day})`,
-        })
-      );
-      continue;
-    }
-
-    if (day === "tuesday") {
-      sessions.push(
-        makeBikeSession({
-          date,
-          id: `bike_${day}_${date}`,
-          durationMin: 75,
-          title: "Aerobic bike support",
-          goalLink,
-          calendarId,
-        })
-      );
-      continue;
-    }
-
-    if (day === "thursday") {
-      sessions.push(
-        makeRunSession({
-          date,
-          id: `run_${day}_${date}`,
-          durationMin: 40,
-          title: "Easy run durability",
-          goalLink,
-          calendarId,
-        })
-      );
-      continue;
-    }
-
-    if (day === "saturday") {
-      sessions.push(
-        makeBikeSession({
-          date,
-          id: `bike_long_${day}_${date}`,
-          durationMin: 180,
-          title: "Long endurance ride",
-          longRide: true,
-          goalLink,
-          calendarId,
-        })
-      );
-      continue;
-    }
-
-    if (day === "sunday") {
-      sessions.push(
-        makeStrengthSession({
-          date,
-          id: `strength_${day}_${date}`,
-          durationMin: 45,
-          title: "Injury resilience strength",
-          goalLink,
-          calendarId,
-        })
-      );
-      continue;
-    }
-
-    sessions.push(
-      makeRestSession({
-        date,
-        id: `recovery_${day}_${date}`,
-        intent: "Recovery and readiness",
-      })
-    );
+  const derived = baseline?.derived_time_budget;
+  if (derived && Number.isFinite(Number(derived.typical)) && Number(derived.typical) > 0) {
+    return {
+      min: Number(derived.min) || 0,
+      typical: Number(derived.typical),
+      max: Number(derived.max) || Number(derived.typical) * 1.15,
+      source: "baseline_auto",
+    };
   }
-
-  return sessions;
+  return { min: 8, typical: 10, max: 12, source: "fallback" };
 }
 
 function main() {
@@ -510,6 +449,7 @@ function main() {
   const profile = safeReadJson(path.join(projectDir, options.profilePath), {});
   const goals = safeReadJson(path.join(projectDir, options.goalsPath), {});
   const strategy = safeReadJson(path.join(projectDir, options.strategyPath), {});
+  const baseline = safeReadJson(path.join(projectDir, PATHS.coach.baselineRaw), {});
   const template = safeReadJson(path.join(projectDir, options.templatePath), {});
 
   const weekStartIso = (() => {
@@ -532,10 +472,7 @@ function main() {
     throw new Error(`Plan already exists at ${outPath}. Re-run with --overwrite to replace it.`);
   }
 
-  const budget =
-    profile && profile.preferences && profile.preferences.time_budget_hours
-      ? profile.preferences.time_budget_hours
-      : { min: 8, typical: 10, max: 12 };
+  const budget = resolveTimeBudget(profile, baseline);
 
   const restDay =
     profile && profile.preferences && typeof profile.preferences.rest_day === "string"
@@ -551,12 +488,7 @@ function main() {
     (template.scheduling_context && template.scheduling_context.timezone) ||
     "UTC";
 
-  const sessions = buildSessions({
-    weekStartIso,
-    restDay,
-    goalLink,
-    calendarId: options.calendarId,
-  });
+  const sessions = buildSessions();
 
   const plan = {
     week_start: weekStartIso,
@@ -565,6 +497,7 @@ function main() {
       min: Number.isFinite(Number(budget.min)) ? Number(budget.min) : 8,
       typical: Number.isFinite(Number(budget.typical)) ? Number(budget.typical) : 10,
       max: Number.isFinite(Number(budget.max)) ? Number(budget.max) : 12,
+      source: budget.source || "unknown",
     },
     scheduling_context: {
       timezone,
@@ -582,18 +515,12 @@ function main() {
         },
       notes:
         (strategy && strategy.phase_notes) ||
-        "Onboarding baseline week generated from defaults and available athlete profile.",
+        "Plan shell created. Sessions will be generated by the model using baseline and profile data.",
     },
     scheduling_decisions: {
       placements: [],
       adjustments: [],
-      habit_adherence_summary: {
-        matched_weekday_count: sessions.filter((s) => s.habit_anchor && s.habit_anchor.weekday_match).length,
-        matched_time_within_cap_count: sessions.filter((s) => Number(s.deviation_minutes || 0) <= 30).length,
-        off_habit_weekday_count: 0,
-        off_habit_weekday_budget: 1,
-        overall_habit_adherence_score: 0.8,
-      },
+      habit_adherence_summary: {},
     },
     needs_user_input: [],
     scheduling_risk_flags: [],

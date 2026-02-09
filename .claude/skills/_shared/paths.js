@@ -11,6 +11,7 @@ const PATHS = {
     profile: "data/coach/profile.json",
     goals: "data/coach/goals.json",
     baseline: "data/coach/baseline.json",
+    baselineRaw: "data/coach/baseline_raw.json",
     strategy: "data/coach/strategy.json",
     progressionState: "data/coach/progression_state.json",
     plansDir: "data/coach/plans",

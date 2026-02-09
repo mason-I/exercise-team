@@ -67,11 +67,34 @@ If the output includes `"install_bootstrap_required"` or bootstrap artifacts are
 Read the following files silently to build your internal coaching brief:
 
 1. `data/coach/strava_snapshot.json` -- recent volume, session frequency, discipline split, equipment signals (power coverage, HR coverage), training gaps.
-2. `data/coach/baseline.json` -- load tolerance range, confidence by discipline, risk flags.
+2. `data/coach/baseline_raw.json` -- raw weekly totals, discipline hours, session counts, load tolerance stats, risk flags (deterministic output from the baseline script).
 3. `data/coach/profile.json` -- check what's already filled vs. template defaults.
 4. `data/coach/goals.json` -- check if primary goal is already set.
 
-From this audit, identify:
+### Snapshot interpretation (model-driven)
+
+After reading `strava_snapshot.json`, synthesize a coaching interpretation before proceeding. This is internal analysis, not written to a file -- it informs your coaching brief:
+
+- **Training load narrative**: Describe the athlete's recent training in human terms. Don't just state "10h/week bike" -- note what that actually looks like: "3 weekday rides of ~1.5h (likely commutes or after-work sessions) plus a 4h weekend ride. This is a classic time-crunched athlete with one anchor long ride."
+- **Session type distribution**: From activity names and patterns, categorize the athlete's training mix. What percentage is endurance vs. intensity vs. recovery? Is the mix appropriate for their goals? E.g., "85% endurance, 10% social group rides with intensity, 5% recovery -- no dedicated threshold work."
+- **Periodization assessment**: Look at the volume trajectory across the snapshot windows (28/56/112 days). Is the athlete building, maintaining, or in decline? Have they taken recovery weeks? "Volume has built linearly from 8h to 17h over 6 weeks with no recovery week -- this is aggressive and a deload may be needed."
+- **Equipment & data quality**: Note what data the athlete's devices capture. Power on bike? HR on all activities? GPS accuracy? This affects what prescription types are viable: "70% of rides have power -- can prescribe power-based bike sessions. Only 40% of runs have HR -- may need RPE-based run prescriptions."
+- **Notable gaps or anomalies**: Any weeks with zero activity? Sudden sport changes? Equipment changes? "No activity in week of Jan 12 -- possible illness or travel. Worth asking about."
+
+Use this interpretation to inform your opening observations and to guide the discovery conversation toward areas of genuine coaching interest rather than generic questions.
+
+### Synthesize baseline.json (model-driven interpretation)
+
+After reading `baseline_raw.json`, synthesize `data/coach/baseline.json` by writing a coaching interpretation of the raw data. Copy all raw fields through unchanged, then add these model-generated fields:
+
+- **`risk_assessment`** (string): Contextual risk narrative grounded in raw `risk_flags` plus actual recent activity. Don't just echo keywords -- reason about them. E.g., "Shin splints flagged but the last 3 weeks show 3 pain-free runs at increasing duration (32→38→45 min), so progression confidence is moderate. Keep run volume at or slightly below baseline for 2 more weeks before increasing."
+- **`confidence_rationale`** (object, keyed by discipline): For each discipline, explain *why* the confidence is what it is, referencing session counts and consistency. E.g., `"bike": "High confidence -- 14 sessions in 8 weeks, consistent 3x/week pattern with no gaps longer than 5 days."`, `"swim": "Low confidence -- only 2 sessions in 8 weeks, both short pool swims. Not enough data to program aggressively."`.
+- **`load_narrative`** (string): Describe the training load trajectory in human terms. Reference `recent_weekly_totals` week-by-week. E.g., "Volume has climbed from 8h to 17h over 6 weeks with no recovery week. This is aggressive -- approaching sustainable ceiling. Consider a deload before adding intensity."
+- **`time_budget_rationale`** (string): Explain what the derived time budget means in context. E.g., "Typical week is 13h but the two 17h weeks included social rides that inflated the number. Sustainable training load is closer to 12h. The min of 8h reflects a genuine low week, not a data gap."
+
+Ground every claim in the raw numbers from `baseline_raw.json`. Write the synthesized result to `data/coach/baseline.json`.
+
+From the combined raw + interpreted baseline, identify:
 - **Volume & consistency**: average weekly hours, sessions per week, recent trends.
 - **Equipment**: power meter (check `bike_capabilities.resolved` and `activities_summary.by_discipline.bike.power_fraction`), HR sensor coverage.
 - **Discipline balance**: which disciplines are active, which are absent or low.
@@ -162,8 +185,8 @@ Before generating the plan, write `data/coach/strategy.json` with:
 - `weekly_priorities`: ordered list of training priorities for the coming weeks.
 - `phase_notes`: any strategic/mindset notes captured during discovery.
 
-### Step 1: Generate the plan
-Run the orchestrator with `preview_only` so it generates the plan without prompting for calendar:
+### Step 1: Create plan shell
+Run the orchestrator with `preview_only` so it creates the plan shell without prompting for calendar:
 
 ```bash
 bun .claude/skills/setup/scripts/setup_orchestrator.js \
@@ -175,29 +198,74 @@ bun .claude/skills/setup/scripts/setup_orchestrator.js \
 If the orchestrator returns:
 - `status: "needs_user_input"` + `stage: "bootstrap_check"` -- Bootstrap broken; re-run install.
 - `status: "needs_user_input"` + `stage: "intake"` -- Gaps remain; return to discovery conversation to address them.
-- `status: "completed"` -- Plan is generated. Continue to Step 2.
+- `status: "completed"` -- Plan shell created. Continue to Step 2.
 
-### Step 2: Present the plan to the athlete
-Read the generated plan file at the path returned in `summary.generated_plan` (typically `data/coach/plans/<week_start>.json`). Also run the scheduling context builder to get current-week actuals:
+The plan shell at `data/coach/plans/<week_start>.json` contains metadata (week dates, time budget, scheduling policy) but an empty `sessions` array. You will now generate sessions.
+
+### Step 2: Generate sessions (model-driven)
+
+Read all data artifacts to build your coaching brief:
+- `data/coach/plans/<week_start>.json` (the shell -- for week dates and time budget)
+- `data/coach/baseline.json` (model-interpreted baseline with risk assessment, confidence rationale, load narrative)
+- `data/coach/baseline_raw.json` (raw discipline baselines, derived time budget, recent weekly totals)
+- `data/coach/profile.json` (preferences, health, injuries, strength config)
+- `data/coach/goals.json` (primary goal and targets)
+- `data/coach/strategy.json` (phase intent, discipline focus)
+- `data/system/strava/schedule_preferences_inferred.json` (statistical habit anchors)
+
+**Schedule preference interpretation (model-driven)**: After reading `schedule_preferences_inferred.json`, interpret the statistical anchors with coaching judgment before using them for placement:
+- **Semantic session classification**: The inferred `canonical_type` is regex-based and often wrong. Re-classify each anchor's session type from the activity names in the raw data. E.g., "Hill sprints with the lads" = interval/social, "Coffee ride" = recovery/social, "Pool drills" = technique. Use your understanding of the athlete's activity naming patterns.
+- **Anchor day patterns**: Identify which days are truly "anchor" days (the athlete trains on that day >75% of weeks) vs. occasional. E.g., "Saturday long ride is a true anchor (present 7 of last 8 weeks). Wednesday swim is sporadic (3 of 8 weeks)."
+- **Life context signals**: Check for recent pattern shifts. If the athlete used to train Monday mornings but hasn't for 3 weeks, their schedule may have changed. Don't blindly follow outdated anchors. Note any shifts when placing sessions.
+- **Pairing patterns**: Identify any day-pairing habits the statistics miss (e.g., always rides Wednesday AND Saturday, or always does strength the day after a hard ride).
+
+Use this interpretation when placing sessions -- prefer high-confidence true anchors, be flexible with sporadic patterns, and flag any recent pattern changes to the athlete.
+
+Also run the scheduling context builder for current-week and previous-week actuals:
 
 ```bash
 bun .claude/skills/plan-week/scripts/build_scheduling_context.js --plan data/coach/plans/<week_start>.json
 ```
 
-Reference `week_status` from the scheduling context output to state what day it is today, what's already been done this week, and which days remain. **Do not estimate current-week volume from baseline averages — use `week_status.summary` actuals.**
+Now generate sessions into the plan and write it back to `data/coach/plans/<week_start>.json`. Follow these grounding rules:
+
+**Volume**: The plan's total trainable hours must be within the `time_budget_hours.min` to `time_budget_hours.max` range, targeting `typical`. Cross-reference with `baseline.discipline_baselines` for per-discipline breakdown. The baseline reflects what the athlete has **proven they can sustain** -- do not program significantly below it unless injury/fatigue demands it.
+
+**Session count per discipline**: Use `baseline.discipline_baselines[discipline].weekly_sessions_avg` as the starting point (round to nearest integer, minimum 1 for active disciplines). Respect `profile.preferences.strength.sessions_per_week` for strength.
+
+**Session duration per discipline**: Use `baseline.discipline_baselines[discipline].typical_session_min` as the default duration. Use `longest_session_min` for one "long" session if the athlete has an established long session pattern (e.g. long Saturday ride). For a first onboarding week, match baseline -- do not increase.
+
+**Day placement**: Use `schedule_preferences_inferred.json` habit anchors (`by_discipline_weekday`) to place sessions on the athlete's habitual days and times. Respect `profile.preferences.rest_day`. If no anchor exists for a session, fill an open day avoiding back-to-back hard sessions.
+
+**Load distribution**: No two `very_hard` sessions on the same day. No hard session the day after a hard session unless the athlete's baseline shows that pattern. Use `scheduling_context.previous_week` to check what the athlete did at the end of last week to avoid overloading across the week boundary.
+
+**Injury awareness**: Reference `profile.health.current_niggles` -- for impacted disciplines, keep volume at or slightly below baseline and note in `scheduling_notes`.
+
+**Required fields per session**: Every non-rest session must include: `id`, `date`, `discipline`, `type`, `canonical_type`, `duration_min`, `scheduled_start_local`, `scheduled_end_local`, `priority`, `load_class`, `habit_anchor` (with `level_used`, `target_start_local`, `confidence`, `weekday_match`), `habit_match_score`, `deviation_minutes`, `deviation_reason`, `exception_code`, `scheduling_notes`, `progression_trace`, `intent`, `success_criteria`.
+
+**Prescriptions**: Include `bike_prescription`, `run_prescription`, `swim_prescription`, or `strength_prescription` as appropriate, each with at least warmup/main/cooldown blocks and target ranges. Include `nutrition_prescription` for all non-rest sessions. These are initial prescriptions -- subagent coaches will refine them on subsequent `/plan-week` runs.
+
+**Plan-level fields**: After writing sessions, also populate `scheduling_decisions`, `scheduling_decisions.habit_adherence_summary`, and `scheduling_risk_flags`.
+
+Write the complete plan (shell metadata + generated sessions) to the plan file.
+
+### Step 3: Present the plan to the athlete
+
+Reference `week_status` from the scheduling context to state what day it is today, what's already been done this week, and which days remain. **Do not estimate current-week volume from baseline averages -- use `week_status.summary` actuals.**
 
 Present a coaching-style weekly summary:
 - Day-by-day sessions: discipline, type, duration, and intent (only today and future days).
 - Key prescriptions and intensity targets.
 - Rest day placement and weekly load shape.
+- Total planned hours vs. baseline context (e.g. "13.5h planned, in line with your recent 12-17h weeks").
 - Any risk flags or notes.
 
 Ask the athlete what they think. Give them space to raise concerns, request swaps, or ask questions before moving on.
 
-### Step 3: Offer calendar sync
+### Step 4: Offer calendar sync
 Only after the athlete has reviewed and acknowledged the plan, naturally ask in conversation whether they'd like the sessions synced to their Google Calendar. Do not use `AskUserQuestion` for this -- keep it conversational.
 
-### Step 4: Apply calendar sync (if accepted)
+### Step 5: Apply calendar sync (if accepted)
 If the athlete wants calendar sync, run:
 
 ```bash

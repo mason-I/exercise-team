@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 
 /*
-Build data/coach/baseline.json deterministically from Strava activities + snapshot + athlete profile.
+Build data/coach/baseline_raw.json deterministically from Strava activities + snapshot + athlete profile.
+The model then interprets this raw output into data/coach/baseline.json with coaching context.
 
 This repo previously relied on a template baseline that never got updated, which produced:
   weekly_hours_range: [0, 0]
@@ -26,7 +27,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     snapshot: PATHS.coach.snapshot,
     activities: PATHS.external.stravaActivities,
     profile: PATHS.coach.profile,
-    out: PATHS.coach.baseline,
+    out: PATHS.coach.baselineRaw,
     windowDays: 56,
     asOfDate: null,
     includeZeroWeeks: true,

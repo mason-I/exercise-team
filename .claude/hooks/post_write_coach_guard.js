@@ -763,6 +763,7 @@ function main() {
   if (base === "profile.json") return validateProfile(data);
   if (base === "goals.json") return validateGoals(data);
   if (base === "baseline.json") return validateBaseline(data);
+  if (base === "baseline_raw.json") return validateBaseline(data);
   if (base === "strategy.json") return validateStrategy(data);
   if (filePath.includes(`${path.sep}checkins${path.sep}`)) return validateCheckin(data);
   if (filePath.includes(`${path.sep}plans${path.sep}`)) {

@@ -218,7 +218,7 @@ function rebuildCoachArtifacts(options) {
       "--profile",
       PATHS.coach.profile,
       "--out",
-      PATHS.coach.baseline,
+      PATHS.coach.baselineRaw,
     ],
     { stdio: "inherit" }
   );

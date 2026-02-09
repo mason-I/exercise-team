@@ -15,7 +15,8 @@ Deliver highly personalized, model‑driven coaching grounded in Strava evidence
 - `data/coach/strava_snapshot.json`
 - `data/coach/profile.json`
 - `data/coach/goals.json`
-- `data/coach/baseline.json`
+- `data/coach/baseline_raw.json` (deterministic aggregates from Strava)
+- `data/coach/baseline.json` (model-interpreted baseline with coaching context)
 - `data/coach/strategy.json`
 - `data/coach/plans/YYYY-MM-DD.json`
 - `data/coach/checkins/YYYY-MM-DD.json` (optional)

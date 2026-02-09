@@ -426,7 +426,7 @@ function requiredBootstrapArtifacts(projectDir) {
     resolveProjectPath(projectDir, PATHS.coach.snapshot),
     resolveProjectPath(projectDir, PATHS.coach.profile),
     resolveProjectPath(projectDir, PATHS.coach.goals),
-    resolveProjectPath(projectDir, PATHS.coach.baseline),
+    resolveProjectPath(projectDir, PATHS.coach.baselineRaw),
     resolveProjectPath(projectDir, PATHS.coach.strategy),
   ];
 }
