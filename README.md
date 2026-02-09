@@ -25,6 +25,8 @@ First-time onboarding and connection flow.
 
 Use this first.
 
+Note: `/setup` derives "missing questions" by reading canonical artifacts under `data/coach/` (for example `data/coach/goals.json` and `data/coach/profile.json`). Answering a question means updating those source-of-truth files (or running the underlying orchestrator with `--answer <question_id>=<value>`), then re-running `/setup`.
+
 ### `/plan-week`
 Creates your weekly training plan.
 - Defaults to the upcoming week

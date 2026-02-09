@@ -29,6 +29,32 @@ function safeReadJson(filePath, fallback = null) {
   }
 }
 
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+}
+
+function parseAnswerToken(token) {
+  const raw = String(token || "");
+  const idx = raw.indexOf("=");
+  if (idx <= 0) {
+    throw new Error(`Invalid --answer '${raw}'. Use --answer <question_id>=<value>.`);
+  }
+  const id = raw.slice(0, idx).trim();
+  const value = raw.slice(idx + 1);
+  if (!id) throw new Error(`Invalid --answer '${raw}'. Missing question_id.`);
+  return { id, value };
+}
+
+function normalizeYesNo(value) {
+  const v = String(value || "").trim().toLowerCase();
+  if (!v) return null;
+  if (v === "yes" || v.startsWith("yes,")) return "yes";
+  if (v === "no" || v.startsWith("no,")) return "no";
+  if (v.includes("apply now")) return "yes";
+  if (v.includes("keep preview")) return "no";
+  return null;
+}
+
 function parseArgs(argv = process.argv.slice(2)) {
   const options = {
     projectDir: resolveProjectDir(),
@@ -45,27 +71,120 @@ function parseArgs(argv = process.argv.slice(2)) {
     weekStart: null,
     skipPlanGeneration: false,
     dryRun: false,
+    reportOnly: false,
+    answers: {},
   };
+
+  const unknown = [];
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--project-dir") options.projectDir = path.resolve(argv[i + 1] || options.projectDir);
-    if (arg === "--state-path") options.statePath = String(argv[i + 1] || "").trim() || null;
-    if (arg === "--resume") options.resume = true;
-    if (arg === "--auto-open-browser") options.autoOpenBrowser = true;
-    if (arg === "--no-auto-open-browser") options.autoOpenBrowser = false;
-    if (arg === "--calendar-gate") options.calendarGate = String(argv[i + 1] || options.calendarGate);
-    if (arg === "--calendar-action") options.calendarAction = String(argv[i + 1] || options.calendarAction);
-    if (arg === "--calendar-sync") options.calendarSync = String(argv[i + 1] || options.calendarSync);
-    if (arg === "--calendar-sync-confirm") {
-      options.calendarSyncConfirm = String(argv[i + 1] || options.calendarSyncConfirm);
+    if (!String(arg || "").startsWith("--")) continue;
+
+    switch (arg) {
+      case "--project-dir":
+        options.projectDir = path.resolve(argv[i + 1] || options.projectDir);
+        i += 1;
+        break;
+      case "--state-path":
+        options.statePath = String(argv[i + 1] || "").trim() || null;
+        i += 1;
+        break;
+      case "--resume":
+        options.resume = true;
+        break;
+      case "--auto-open-browser":
+        options.autoOpenBrowser = true;
+        break;
+      case "--no-auto-open-browser":
+        options.autoOpenBrowser = false;
+        break;
+      case "--calendar-gate":
+        options.calendarGate = String(argv[i + 1] || options.calendarGate);
+        i += 1;
+        break;
+      case "--calendar-action":
+        options.calendarAction = String(argv[i + 1] || options.calendarAction);
+        i += 1;
+        break;
+      case "--calendar-sync":
+        options.calendarSync = String(argv[i + 1] || options.calendarSync);
+        i += 1;
+        break;
+      case "--calendar-sync-confirm":
+        options.calendarSyncConfirm = String(argv[i + 1] || options.calendarSyncConfirm);
+        i += 1;
+        break;
+      case "--calendar-id":
+        options.calendarId = String(argv[i + 1] || options.calendarId);
+        i += 1;
+        break;
+      case "--activities-mode":
+        options.activitiesMode = String(argv[i + 1] || options.activitiesMode);
+        i += 1;
+        break;
+      case "--window-days":
+        options.windowDays = Number(argv[i + 1] || options.windowDays);
+        i += 1;
+        break;
+      case "--week-start":
+        options.weekStart = String(argv[i + 1] || "").trim();
+        i += 1;
+        break;
+      case "--skip-plan-generation":
+        options.skipPlanGeneration = true;
+        break;
+      case "--dry-run":
+        options.dryRun = true;
+        break;
+      case "--report-only":
+        options.reportOnly = true;
+        break;
+      case "--answer": {
+        const { id, value } = parseAnswerToken(argv[i + 1]);
+        options.answers[id] = value;
+        i += 1;
+
+        // Convenience: allow answering the calendar confirmation prompt via the same --answer mechanism.
+        if (id === "calendar_sync_confirmation") {
+          const yn = normalizeYesNo(value);
+          if (yn) options.calendarSyncConfirm = yn;
+        }
+        break;
+      }
+      case "--answers-json": {
+        const rel = String(argv[i + 1] || "").trim();
+        if (!rel) throw new Error("Missing value for --answers-json <path>.");
+        const answersPath = path.resolve(options.projectDir, rel);
+        const payload = safeReadJson(answersPath, null);
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          throw new Error(`Invalid --answers-json payload at ${answersPath}. Expected a JSON object.`);
+        }
+        for (const [id, value] of Object.entries(payload)) {
+          options.answers[String(id)] = value;
+          if (String(id) === "calendar_sync_confirmation") {
+            const yn = normalizeYesNo(value);
+            if (yn) options.calendarSyncConfirm = yn;
+          }
+        }
+        i += 1;
+        break;
+      }
+      default: {
+        // Common mistake: passing imaginary --answers-* flags. Error loudly with the correct mechanism.
+        if (String(arg).startsWith("--answers-")) {
+          throw new Error(
+            `Unknown flag '${arg}'. This orchestrator does not support --answers-*. Use repeated --answer <id>=<value> instead.`
+          );
+        }
+        unknown.push(arg);
+        break;
+      }
     }
-    if (arg === "--calendar-id") options.calendarId = String(argv[i + 1] || options.calendarId);
-    if (arg === "--activities-mode") options.activitiesMode = String(argv[i + 1] || options.activitiesMode);
-    if (arg === "--window-days") options.windowDays = Number(argv[i + 1] || options.windowDays);
-    if (arg === "--week-start") options.weekStart = String(argv[i + 1] || "").trim();
-    if (arg === "--skip-plan-generation") options.skipPlanGeneration = true;
-    if (arg === "--dry-run") options.dryRun = true;
+  }
+
+  if (unknown.length) {
+    throw new Error(`Unknown flag(s): ${unknown.join(", ")}.`);
   }
 
   options.calendarAction = String(options.calendarAction || "auto").trim().toLowerCase();
@@ -92,6 +211,121 @@ function parseArgs(argv = process.argv.slice(2)) {
   }
 
   return options;
+}
+
+function applyAnswersToArtifacts(projectDir, answers) {
+  if (!answers || typeof answers !== "object") return { applied: false, updated: [] };
+
+  const updated = new Set();
+  const goalsPath = resolveProjectPath(projectDir, PATHS.coach.goals);
+  const profilePath = resolveProjectPath(projectDir, PATHS.coach.profile);
+  const goals = safeReadJson(goalsPath, {});
+  const profile = safeReadJson(profilePath, {});
+
+  // Intake: primary_goal
+  if (answers.primary_goal != null) {
+    const raw = String(answers.primary_goal);
+    const urlMatch = raw.match(/https?:\/\/\S+/);
+    const url = urlMatch ? urlMatch[0] : null;
+    const date = parseDate(raw);
+    const dateIso = date ? toIsoDate(date) : null;
+
+    // Best-effort name extraction from free-form input.
+    let name = raw;
+    if (url) name = name.replace(url, " ").trim();
+    if (dateIso) name = name.replace(dateIso, " ").trim();
+    name = name.replace(/\s{2,}/g, " ").replace(/^[-|:,]+\s*/, "").trim();
+    if (!name) name = "Primary Event";
+
+    goals.primary_goal = {
+      ...(goals.primary_goal || {}),
+      name,
+      date: dateIso || (goals.primary_goal ? goals.primary_goal.date : null) || "",
+      disciplines: Array.isArray(goals.primary_goal?.disciplines) && goals.primary_goal.disciplines.length
+        ? goals.primary_goal.disciplines
+        : ["swim", "bike", "run"],
+      url: url || goals.primary_goal?.url || null,
+      raw_input: raw,
+    };
+    updated.add(PATHS.coach.goals);
+  }
+
+  // Intake: injury_history
+  if (answers.injury_history != null) {
+    const raw = String(answers.injury_history);
+    const normalized = raw.trim().toLowerCase();
+    profile.health = profile.health && typeof profile.health === "object" ? profile.health : {};
+
+    if (normalized === "no known issues" || normalized === "no") {
+      profile.health.injury_context_status = "none_reported";
+      profile.health.current_niggles = [];
+      profile.health.injury_history_12mo = [];
+    } else {
+      profile.health.injury_context_status = "provided";
+      profile.health.current_niggles = Array.isArray(profile.health.current_niggles)
+        ? profile.health.current_niggles
+        : [];
+      // Store the raw response (even if it is just the option text) so onboarding can proceed deterministically.
+      profile.health.current_niggles.push({
+        area: "unspecified",
+        description: raw,
+        severity: "unspecified",
+        impact: "unspecified",
+        as_of_date: toIsoDate(new Date()),
+      });
+    }
+    updated.add(PATHS.coach.profile);
+  }
+
+  if (updated.has(PATHS.coach.goals)) writeJson(goalsPath, goals);
+  if (updated.has(PATHS.coach.profile)) writeJson(profilePath, profile);
+
+  return { applied: updated.size > 0, updated: [...updated] };
+}
+
+function addQuestionHints(question) {
+  const id = String(question && question.id ? question.id : "");
+  const hintById = {
+    primary_goal: {
+      source_of_truth: String(PATHS.coach.goals),
+      edit: "data/coach/goals.json: primary_goal { name, date }",
+      cli: "--answer primary_goal='Ironman Australia 2027-10-18'",
+    },
+    injury_history: {
+      source_of_truth: String(PATHS.coach.profile),
+      edit: "data/coach/profile.json: health { injury_context_status, current_niggles, injury_history_12mo }",
+      cli: "--answer injury_history='No known issues' (or a description)",
+    },
+    time_budget: {
+      source_of_truth: String(PATHS.coach.profile),
+      edit: "data/coach/profile.json: preferences.time_budget_hours { min, typical, max }",
+      cli: "--answer time_budget='min=.. typical=.. max=..' (manual edit recommended)",
+    },
+    rest_day: {
+      source_of_truth: String(PATHS.coach.profile),
+      edit: "data/coach/profile.json: preferences.rest_day",
+      cli: "--answer rest_day='Monday' (manual edit recommended)",
+    },
+    strength_preferences: {
+      source_of_truth: String(PATHS.coach.profile),
+      edit: "data/coach/profile.json: preferences.strength { enabled, sessions_per_week }",
+      cli: "--answer strength_preferences='Include strength' (manual edit recommended)",
+    },
+    session_preferences: {
+      source_of_truth: String(PATHS.coach.profile),
+      edit: "data/coach/profile.json: preferences.session_type_preferences",
+      cli: "--answer session_preferences='No extra constraints' (manual edit recommended)",
+    },
+    swim_access: {
+      source_of_truth: String(PATHS.coach.profile),
+      edit: "data/coach/profile.json: (add) preferences.swim_access",
+      cli: "--answer swim_access='Yes, access is available' (manual edit recommended)",
+    },
+  };
+
+  const hint = hintById[id];
+  if (!hint) return question;
+  return { ...question, how_to_satisfy: hint };
 }
 
 function runBunScript(projectDir, relScriptPath, args = [], options = {}) {
@@ -308,6 +542,47 @@ async function main() {
       return;
     }
 
+    if (options.reportOnly) {
+      const questionInputs = collectQuestionInputs(projectDir);
+      const questions = generateOnboardingQuestions(questionInputs);
+      const gaps = questions.required_questions.map((q) => ({
+        id: q.id,
+        field: addQuestionHints(q).how_to_satisfy?.edit || q.id,
+        reason: q.reason,
+      }));
+      output.status = "report";
+      output.stage = "intake";
+      output.summary = {
+        message: "Shadow validation report. No state modified.",
+        decision_complete: questions.decision_complete,
+        missing_required_count: questions.missing_required_count,
+        gaps,
+      };
+      if (questions.optional_questions.length > 0) {
+        output.summary.optional_gaps = questions.optional_questions.map((q) => ({
+          id: q.id,
+          field: addQuestionHints(q).how_to_satisfy?.edit || q.id,
+          reason: q.reason,
+        }));
+      }
+      process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+      return;
+    }
+
+    // Apply any CLI-provided answers into the canonical artifacts before recomputing questions.
+    const appliedAnswers = applyAnswersToArtifacts(projectDir, options.answers);
+    if (appliedAnswers.applied) {
+      mutateState(statePath, (state) => ({
+        ...state,
+        intake_answers: {
+          ...(state.intake_answers || {}),
+          applied_at: new Date().toISOString(),
+          updated_files: appliedAnswers.updated,
+          answers: { ...(state.intake_answers?.answers || {}), ...options.answers },
+        },
+      }));
+    }
+
     moveToStage("intake");
     const questionInputs = collectQuestionInputs(projectDir);
     const questions = generateOnboardingQuestions(questionInputs);
@@ -327,7 +602,7 @@ async function main() {
         message: "Onboarding requires additional athlete inputs before artifacts can be finalized.",
         missing_required_count: questions.missing_required_count,
       };
-      output.needs_user_input = questions.required_questions;
+      output.needs_user_input = questions.required_questions.map(addQuestionHints);
       process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
       return;
     }

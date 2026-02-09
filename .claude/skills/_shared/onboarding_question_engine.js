@@ -48,6 +48,9 @@ function hasStrengthConfig(profile) {
 function hasInjuryContext(profile) {
   const health = profile && profile.health ? profile.health : null;
   if (!health || typeof health !== "object") return false;
+  // "No known issues" is still a completed answer; store it explicitly so onboarding doesn't re-ask forever.
+  const status = String(health.injury_context_status || "").trim().toLowerCase();
+  if (status === "none_reported" || status === "provided") return true;
   if (asArray(health.current_niggles).length > 0) return true;
   if (asArray(health.injury_history_12mo).length > 0) return true;
   return false;

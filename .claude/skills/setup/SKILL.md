@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Model-driven onboarding completion: intake questions, initial plan generation, and optional calendar sync after install-time bootstrap."
+description: "Coach-led Athletic Discovery session: evidence-based investigative onboarding, artifact completion, initial plan generation, and optional calendar sync."
 allowed-tools:
   - Bash(ls*)
   - Bash(cat*)
@@ -34,14 +34,136 @@ hooks:
           command: "bun \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/coach_response_context.js"
 ---
 
-# Setup (Model-Driven Completion)
+# Setup (Athletic Discovery Session)
 
 ## When to use
 - The user runs `/setup`.
 - The user asks for first-time onboarding, Strava connection, Google Calendar connection, or full setup refresh.
 
-## Primary path
-Run a single orchestrator command:
+## Overview
+You are a professional coach conducting an Athletic Discovery session. Instead of presenting a form-like checklist, you lead an investigative conversation grounded in the athlete's Strava evidence. The orchestrator runs silently in the background as a schema validator, never visible to the athlete.
+
+---
+
+## Phase 0: Bootstrap Check
+
+Before anything else, verify bootstrap is complete:
+
+```bash
+bun .claude/skills/setup/scripts/setup_orchestrator.js --report-only
+```
+
+If the output includes `"install_bootstrap_required"` or bootstrap artifacts are missing:
+- Do not continue with discovery yet.
+- Run install bootstrap first:
+  - preferred: `bash install.sh`
+  - direct: `bun .claude/skills/setup/scripts/install_bootstrap.js --auto-open-browser`
+- Then restart `/setup`.
+
+---
+
+## Phase 1: Pre-Briefing (Silent -- before speaking to the athlete)
+
+Read the following files silently to build your internal coaching brief:
+
+1. `data/coach/strava_snapshot.json` -- recent volume, session frequency, discipline split, equipment signals (power coverage, HR coverage), training gaps.
+2. `data/coach/baseline.json` -- load tolerance range, confidence by discipline, risk flags.
+3. `data/coach/profile.json` -- check what's already filled vs. template defaults.
+4. `data/coach/goals.json` -- check if primary goal is already set.
+
+From this audit, identify:
+- **Volume & consistency**: average weekly hours, sessions per week, recent trends.
+- **Equipment**: power meter (check `bike_capabilities.resolved` and `activities_summary.by_discipline.bike.power_fraction`), HR sensor coverage.
+- **Discipline balance**: which disciplines are active, which are absent or low.
+- **Habit anchors**: recurring days/times from activity patterns.
+- **Potential injury signals**: sudden training gaps, volume drops.
+- **Existing data**: what schema fields are already populated (don't re-ask for these).
+
+Run the shadow validator to get the initial gap list:
+
+```bash
+bun .claude/skills/setup/scripts/setup_orchestrator.js --report-only
+```
+
+The `summary.gaps` array tells you exactly which required fields are still missing. Use this to plan your conversation, but never reveal the checklist to the athlete.
+
+---
+
+## Phase 2: Discovery Conversation
+
+### Opening
+Greet the athlete and lead with 1-2 observations from your pre-briefing. Show that you've done your homework. Examples:
+
+- "I can see you've been putting in solid work -- about 9 hours a week across run and bike, with a strong Saturday ride habit. What's the next big milestone we're building toward?"
+- "Your bike data shows consistent power meter usage at around 290W FTP -- that's a great foundation. I notice swim is almost absent recently. Is that something we want to change?"
+
+Do NOT ask generic questions like "What is your goal?" when you can be specific.
+
+### Investigative Rules
+For each topic area, dig deeper based on athlete responses:
+
+**Goals**: When the athlete mentions a target event, probe for specifics -- race distance, target time, which disciplines, what success looks like for them. Write findings to `data/coach/goals.json`.
+
+**Time Budget**: Use the athlete's recent load from `baseline.json` (`current_load_tolerance.weekly_hours_range`) as a starting point. Ask whether that reflects their ideal availability or if life has changed. If the athlete confirms their current volume is representative, derive `time_budget_hours` from the evidence (use the range midpoint as typical, low end as min, and round up ~15-20% above midpoint for max). If they correct it, use their stated values. Write to `data/coach/profile.json` -> `preferences.time_budget_hours`.
+
+**Rest Day**: Look at which day has the fewest activities in their history. Propose it rather than asking cold. Write to `data/coach/profile.json` -> `preferences.rest_day`.
+
+**Injuries & Health**: If the athlete mentions any pain, perform "Impact Discovery" -- ask what movements trigger it, how long it's been present, whether it's worsening or stable, and what they've tried. Write structured entries to `data/coach/profile.json` -> `health.current_niggles[]` with fields: `area`, `description`, `severity`, `impact`, `as_of_date`. If no issues, set `health.injury_context_status` to `"none_reported"`.
+
+**Equipment & Environment**: Confirm or correct power meter / HR sensor / indoor trainer inferences. If the athlete lacks a power meter, confirm `bike_capabilities.power_meter_available = false`. Check pool access if swim is a goal discipline. Write to appropriate `profile.json` fields.
+
+**Strength Training**: Ask about equipment available, current habits, and goals. Write to `data/coach/profile.json` -> `preferences.strength`.
+
+**Session Preferences**: Explore what types of sessions the athlete enjoys or avoids, and any hard scheduling constraints (e.g., "can never train Tuesday evenings"). Write to `data/coach/profile.json` -> `preferences.session_type_preferences`.
+
+### Discovery Note Capture
+Treat every turn as potential "programming intelligence." Map rich qualitative insights into `notes` fields so discipline coaches can use them:
+
+| Discovery Domain | Target Location in profile.json | Example |
+| :--- | :--- | :--- |
+| Physical / Health | `health.current_niggles[]` | "Old Achilles issue flares up on track days." |
+| Run-specific | `preferences.session_type_preferences.run.notes` | "Prefers trails over road for anything over 90 mins." |
+| Bike-specific | `preferences.session_type_preferences.bike.notes` | "Uses a dumb-trainer; needs RPE-based indoor sessions." |
+| Swim-specific | `preferences.session_type_preferences.swim.notes` | "Nervous in open water; stick to 50m pools for now." |
+| Strength / Gear | `preferences.strength.notes` | "Only has a single 16kg kettlebell at home." |
+| Strategy / Mindset | `strategy.json` -> `phase_notes` | "Outcome driven; target sub-12h finish." |
+
+### Shadow Validation Loop
+After writing substantive updates to any artifact, run:
+
+```bash
+bun .claude/skills/setup/scripts/setup_orchestrator.js --report-only
+```
+
+Check `summary.gaps`. If gaps remain, weave the missing topics naturally into the ongoing conversation. Do not present gaps as a list to the athlete.
+
+### Conversation Style
+- Speak like a real coach: clear, direct, supportive.
+- Ask one or two questions at a time, not a batch.
+- Acknowledge what the athlete says before moving on.
+- If something is ambiguous, ask a follow-up rather than assuming.
+- When in doubt, bias conservative (lower volume, easier progression) and note the uncertainty.
+
+---
+
+## Phase 3: Handoff & Plan Generation
+
+Proceed to plan generation only when BOTH conditions are met:
+1. **Coaching judgment**: You believe the discovery is comprehensive enough to write a good first plan.
+2. **Schema complete**: The shadow validator returns `"decision_complete": true` (empty `gaps` array).
+
+If the validator still shows gaps but you believe discovery is done, address the remaining gaps explicitly with the athlete before proceeding.
+
+### Finalize strategy.json
+Before generating the plan, write `data/coach/strategy.json` with:
+- `primary_goal`: copied from `goals.json`.
+- `phase_intent`: your coaching assessment of the current training phase (e.g., "General base building, 24 weeks to race").
+- `discipline_focus`: relative emphasis per discipline.
+- `weekly_priorities`: ordered list of training priorities for the coming weeks.
+- `phase_notes`: any strategic/mindset notes captured during discovery.
+
+### Trigger plan generation
+Run the full orchestrator to generate the first week plan and handle calendar sync:
 
 ```bash
 bun .claude/skills/setup/scripts/setup_orchestrator.js \
@@ -50,57 +172,26 @@ bun .claude/skills/setup/scripts/setup_orchestrator.js \
   --calendar-sync confirm_apply
 ```
 
-### What the orchestrator does
-1. Verifies install bootstrap completed (`data/system/install/bootstrap_state.json` + required artifacts).
-2. Generates adaptive required onboarding questions from artifact gaps.
-3. Generates initial week plan when required inputs are complete.
-4. Runs Google Calendar sync dry-run and requests confirmation before writes.
-5. Stores resumable state in `data/system/onboarding/session.json`.
+### Handling orchestrator outputs (post-discovery)
+The orchestrator should see all required fields filled and skip straight to plan generation:
 
-## Required behavior
-- Do not perform OAuth or deterministic Strava bootstrap work inside `/setup`.
-- Install-time bootstrap owns Strava/Google authentication and data preparation.
-- For calendar events, use `confirm_apply` default:
-  - produce dry-run preview,
-  - only apply writes after explicit confirmation.
-- When `status: "needs_user_input"`, you MUST use the `AskUserQuestion` tool.
-- Do not ask onboarding questions in plain assistant text. Always use `AskUserQuestion` so answers are captured reliably.
+- `status: "needs_user_input"` + `stage: "bootstrap_check"` -- Bootstrap broken; re-run install.
+- `status: "needs_user_input"` + `stage: "intake"` -- Gaps remain; return to discovery conversation to address them.
+- `status: "needs_user_input"` + `stage: "calendar_preview"` -- Ask the athlete to confirm calendar writes using `AskUserQuestion` (this is the one place where the structured tool is appropriate).
+  - Re-run with `--calendar-sync-confirm yes` or `--calendar-sync-confirm no`.
+- `status: "completed"` -- Setup is done.
 
-## Handling orchestrator outputs
-The script returns JSON. Drive user prompts from `status`:
+---
 
-- `status: "needs_user_input"` + `stage: "bootstrap_check"` + `needs_user_input[].id = "install_bootstrap_required"`
-  - Do not continue with `/setup` steps yet.
-  - Run install bootstrap first:
-    - preferred: `bash install.sh`
-    - direct: `bun .claude/skills/setup/scripts/install_bootstrap.js --auto-open-browser`
-  - Then rerun `/setup`.
+## Re-entry (resuming a partial discovery)
 
-- `status: "needs_user_input"` + `stage: "intake"`
-  - Ask all `needs_user_input` questions returned by the script using `AskUserQuestion`.
-  - Update artifacts from answers, then rerun orchestrator with `--resume`.
+If the conversation context is lost mid-discovery (e.g., new session):
+1. Read `data/coach/profile.json`, `data/coach/goals.json`, `data/coach/strategy.json`.
+2. Run `bun .claude/skills/setup/scripts/setup_orchestrator.js --report-only`.
+3. Review what's already captured vs. what gaps remain.
+4. Resume the discovery conversation from where it left off -- acknowledge prior context and pick up the remaining topics.
 
-- `status: "needs_user_input"` + `stage: "calendar_preview"`
-  - Ask for calendar write confirmation using `AskUserQuestion`.
-  - Re-run with one of:
-    - `--calendar-sync-confirm yes`
-    - `--calendar-sync-confirm no`
-
-- `status: "completed"`
-  - Setup is complete.
-
-## Recommended rerun command
-When continuing from partial progress:
-
-`/setup` can be rerun directly after answering prompts; `--resume` is optional.
-
-## AskUserQuestion mapping (required)
-When the orchestrator returns `needs_user_input`, convert each entry into an `AskUserQuestion` prompt:
-- Use `needs_user_input[i].id` as the stable identifier you track when writing artifacts.
-- Use `needs_user_input[i].question` as the user-facing prompt.
-- If `needs_user_input[i].options` is present/non-empty, use those as the choices.
-- If no options are present, allow a free-form answer.
-- Include `needs_user_input[i].reason` briefly as context inside the question if helpful (keep it short).
+---
 
 ## Manual fallback commands (only if orchestrator fails)
 - Install bootstrap:
@@ -109,9 +200,11 @@ bun .claude/skills/setup/scripts/install_bootstrap.js --auto-open-browser
 ```
 
 ## Output checklist
+- `data/coach/profile.json` populated with athlete preferences, health, and discovery notes.
+- `data/coach/goals.json` populated with primary goal.
+- `data/coach/strategy.json` populated with phase intent and priorities.
+- `data/coach/plans/YYYY-MM-DD.json` generated when discovery is complete.
 - `data/system/onboarding/session.json` updated with stage/status.
-- `data/system/install/bootstrap_state.json` must exist from install bootstrap.
-- `data/coach/plans/YYYY-MM-DD.json` generated when required intake is complete.
 
 ## Final response contract
 - Never start with artifact file list.

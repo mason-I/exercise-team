@@ -81,7 +81,8 @@ All coaching decisions are model-driven. The `data/coach/` directory is the sour
   "primary_goal": { "name": "", "date": "YYYY-MM-DD", "disciplines": [] },
   "phase_intent": "",
   "discipline_focus": { "run": "", "bike": "", "swim": "" },
-  "weekly_priorities": []
+  "weekly_priorities": [],
+  "phase_notes": ""
 }
 ```
 
