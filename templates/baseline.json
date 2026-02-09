@@ -13,5 +13,37 @@
     "notes": ""
   },
   "risk_flags": [],
+  "discipline_baselines": {
+    "run": {
+      "weekly_hours_avg": 0,
+      "weekly_sessions_avg": 0,
+      "typical_session_min": 0,
+      "longest_session_min": 0,
+      "trend": "maintaining"
+    },
+    "bike": {
+      "weekly_hours_avg": 0,
+      "weekly_sessions_avg": 0,
+      "typical_session_min": 0,
+      "longest_session_min": 0,
+      "trend": "maintaining"
+    },
+    "swim": {
+      "weekly_hours_avg": 0,
+      "weekly_sessions_avg": 0,
+      "typical_session_min": 0,
+      "longest_session_min": 0,
+      "trend": "maintaining"
+    },
+    "strength": {
+      "weekly_hours_avg": 0,
+      "weekly_sessions_avg": 0,
+      "typical_session_min": 0,
+      "longest_session_min": 0,
+      "trend": "maintaining"
+    }
+  },
+  "recent_weekly_totals": [],
+  "derived_time_budget": null,
   "evidence": []
 }

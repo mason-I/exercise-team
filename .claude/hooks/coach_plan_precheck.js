@@ -960,11 +960,13 @@ function validateRunPrescriptionStructure(session) {
           violation("DISCIPLINE_PRESCRIPTION_INVALID", `${label}: run_prescription.blocks[${index}].block_label missing`)
         );
       }
-      if (!isPositiveInteger(Number(block.duration_min))) {
+      const hasDuration = isPositiveInteger(Number(block.duration_min));
+      const hasDistance = isPositiveInteger(Number(block.distance_m));
+      if (!hasDuration && !hasDistance) {
         violations.push(
           violation(
             "DISCIPLINE_PRESCRIPTION_INVALID",
-            `${label}: run_prescription.blocks[${index}].duration_min must be positive integer`
+            `${label}: run_prescription.blocks[${index}].duration_min or distance_m must be a positive integer`
           )
         );
       }

@@ -312,6 +312,93 @@ function main() {
   const bikeStats = disciplineStats("bike");
   const swimStats = disciplineStats("swim");
 
+  // --- Discipline baselines (per-discipline breakdown) ---
+  function buildDisciplineBaseline(discipline) {
+    const snap28 = snapshotByDiscipline?.[discipline]?.windows?.["28"] || null;
+    const recentWeeks = totals.weeks.slice(-4);
+    const recentHours = recentWeeks.map((wk) => totals.weekMap.get(wk)?.byDisciplineHours?.[discipline] || 0);
+    const recentSessions = recentWeeks.map((wk) => totals.weekMap.get(wk)?.byDisciplineSessions?.[discipline] || 0);
+
+    const weeklyHoursAvg =
+      snap28 && Number.isFinite(Number(snap28.avg_hours_per_week))
+        ? Number(snap28.avg_hours_per_week)
+        : recentHours.reduce((a, b) => a + b, 0) / Math.max(1, recentWeeks.length);
+    const weeklySessionsAvg =
+      snap28 && Number.isFinite(Number(snap28.avg_sessions_per_week))
+        ? Number(snap28.avg_sessions_per_week)
+        : recentSessions.reduce((a, b) => a + b, 0) / Math.max(1, recentWeeks.length);
+
+    const totalSessions = snap28?.sessions || recentSessions.reduce((a, b) => a + b, 0);
+    const totalTimeSec = snap28?.moving_time_sec || recentHours.reduce((a, b) => a + b, 0) * 3600;
+    const typicalSessionMin = totalSessions > 0 ? Math.round(totalTimeSec / totalSessions / 60) : 0;
+    const longestSessionMin = snap28?.longest_duration_sec ? Math.round(snap28.longest_duration_sec / 60) : 0;
+
+    // Trend: compare recent half of window vs prior half
+    const midpoint = Math.floor(totals.weeks.length / 2);
+    const priorWeeks = totals.weeks.slice(0, midpoint);
+    const latterWeeks = totals.weeks.slice(midpoint);
+    const priorAvg =
+      priorWeeks.length > 0
+        ? priorWeeks.reduce((sum, wk) => sum + (totals.weekMap.get(wk)?.byDisciplineHours?.[discipline] || 0), 0) /
+          priorWeeks.length
+        : 0;
+    const latterAvg =
+      latterWeeks.length > 0
+        ? latterWeeks.reduce((sum, wk) => sum + (totals.weekMap.get(wk)?.byDisciplineHours?.[discipline] || 0), 0) /
+          latterWeeks.length
+        : 0;
+
+    let trend = "maintaining";
+    if (priorAvg > 0 && latterAvg > priorAvg * 1.15) trend = "building";
+    else if (priorAvg > 0 && latterAvg < priorAvg * 0.85) trend = "declining";
+
+    return {
+      weekly_hours_avg: roundHours(weeklyHoursAvg),
+      weekly_sessions_avg: Math.round(weeklySessionsAvg * 10) / 10,
+      typical_session_min: typicalSessionMin,
+      longest_session_min: longestSessionMin,
+      trend,
+    };
+  }
+
+  const disciplineBaselines = {
+    run: buildDisciplineBaseline("run"),
+    bike: buildDisciplineBaseline("bike"),
+    swim: buildDisciplineBaseline("swim"),
+    strength: buildDisciplineBaseline("strength"),
+  };
+
+  // --- Recent weekly totals (most recent first) ---
+  const recentWeeklyTotals = [...totals.weeks].reverse().map((wk) => {
+    const entry = totals.weekMap.get(wk);
+    const row = { week: wk, total_hours: roundHours(entry?.totalHours || 0) };
+    for (const d of ["run", "bike", "swim", "strength"]) {
+      const h = roundHours(entry?.byDisciplineHours?.[d] || 0);
+      if (h > 0) row[d] = h;
+    }
+    return row;
+  });
+
+  // --- Derived time budget (from last 4 completed weeks, excluding current incomplete week) ---
+  const currentWeek = toIsoDate(weekStart(parseDate(asOf)));
+  const completedWeeks = totals.weeks.filter((wk) => wk !== currentWeek);
+  const recent4 = completedWeeks.slice(-4);
+  const recent4Totals = recent4.map((wk) => totals.weekMap.get(wk)?.totalHours || 0).filter((h) => h > 0);
+  let derivedTimeBudget = null;
+  if (recent4Totals.length >= 2) {
+    const avg = recent4Totals.reduce((a, b) => a + b, 0) / recent4Totals.length;
+    const sorted = [...recent4Totals].sort((a, b) => a - b);
+    const lo = sorted[0];
+    const hi = sorted[sorted.length - 1];
+    derivedTimeBudget = {
+      min: Math.round(lo),
+      typical: Math.round(avg),
+      max: Math.round(hi * 1.15),
+      source: "baseline_auto",
+      notes: `Derived from recent ${recent4Totals.length}-week actuals (avg ${roundHours(avg)}h). Min=lowest week, typical=mean, max=highest week+15%.`,
+    };
+  }
+
   const baseline = {
     as_of_date: asOf,
     confidence_by_discipline: {
@@ -326,6 +413,9 @@ function main() {
       )}h p50=${roundHours(p50)}h p75=${roundHours(q3)}h.`,
     },
     risk_flags: buildRiskFlags(profile),
+    discipline_baselines: disciplineBaselines,
+    recent_weekly_totals: recentWeeklyTotals,
+    derived_time_budget: derivedTimeBudget,
     evidence: [
       {
         source: "strava_snapshot",
@@ -356,6 +446,8 @@ function main() {
           weeks: totals.weeks.length,
         },
         confidence_by_discipline: baseline.confidence_by_discipline,
+        discipline_baselines: baseline.discipline_baselines,
+        derived_time_budget: baseline.derived_time_budget,
         risk_flag_count: Array.isArray(baseline.risk_flags) ? baseline.risk_flags.length : 0,
       },
       null,

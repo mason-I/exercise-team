@@ -107,3 +107,41 @@ Return exactly one JSON object:
   - otherwise set `progression_comparison="none"`, `prior_week_session_id=null`, and add a `risk_flags` note about lower progression confidence.
 - `progression_decision`, `progressed_fields`, `load_delta_summary`, `regression_rule`, and `goal_link` must explicitly explain what improved versus last week and why this advances the current goal.
 - For `taper|deload`, prescribe reduced stress while preserving session objective specificity.
+
+## Specificity Rules
+
+### Zone derivation (mandatory before writing any block)
+Read `data/coach/strava_snapshot.json` and `data/coach/profile.json -> preferences.bike_capabilities.resolved`.
+
+**When power is available** (`no_power_mode=false`), derive zones from `strava_snapshot.json -> athlete.ftp`:
+- Z1 Recovery: <55% FTP
+- Z2 Endurance: 55-75% FTP
+- Sweet Spot: 84-97% FTP
+- Threshold: 91-105% FTP
+- VO2max: 106-120% FTP
+- Neuromuscular: >120% FTP
+
+**When no power** (`no_power_mode=true`), derive zones from `strava_snapshot.json -> zones.heart_rate.zones` as specific BPM ranges (e.g. if zone boundaries are 131/164/180/196, then Z2 = 131-164 BPM). Always include `rpe_range` as fallback.
+
+### Numeric target_range (mandatory)
+Every block's `target_range` must contain **specific numeric values**, not just zone labels.
+- Power example: `"160-218W (55-75% FTP)"`
+- HR example: `"131-155 BPM (Z2)"`
+- RPE example: `"RPE 3-4 (conversational)"`
+Never write `"Z2 steady"` — always include the numbers.
+
+### Multi-block structure (mandatory for non-recovery sessions)
+- **Threshold / VO2 / neuromuscular / race_specific** sessions: minimum 3 blocks (warmup, main set, cooldown).
+- **Aerobic endurance rides 90+ min**: at least 3 blocks (warmup 10-15min, main, cooldown 10min).
+- **Recovery rides < 60 min**: may be a single block.
+
+### Interval structure for intensity sessions
+- **Threshold**: `work_interval` with specific power/HR targets and duration (e.g. `"8min at 264-305W"`), `recovery_interval` with duration and target (e.g. `"3min at 145W"`), `repetitions` > 1.
+- **VO2max**: shorter work intervals (e.g. `"3min at 308-348W"`), equal or longer recovery (e.g. `"3min at 145W"`), `repetitions` typically 4-8.
+- **Neuromuscular**: very short bursts (e.g. `"30sec max effort"`), long recovery (e.g. `"4min easy spin"`), `repetitions` typically 6-12.
+- **Sweet spot / tempo**: longer sustained efforts (e.g. `"20min at 244-281W"`), short recovery between blocks.
+
+### Session type block examples
+- **Aerobic endurance 3h**: warmup 15min Z1-Z2 build → main 150min Z2 steady at 160-218W → cooldown 15min Z1 easy spin
+- **Threshold 75min**: warmup 15min progressive → 3x12min at 264-305W / 4min at 145W → cooldown 10min
+- **VO2max 60min**: warmup 15min with 3x30sec openers → 5x3min at 308-348W / 3min easy → cooldown 10min

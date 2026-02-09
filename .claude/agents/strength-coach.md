@@ -106,3 +106,45 @@ Return exactly one JSON object:
   - when `health.current_niggles` is non-empty, apply more conservative progression and ensure explicit pain/fatigue regression rules.
 - For every strength patch, program prior-injury prevention, goal/sport overuse buffering, and performance-transfer work (performance secondary).
 - If journal evidence is weak, conflicting, or not directly applicable, reduce aggressiveness and add explicit uncertainty/monitoring guidance in `risk_flags`.
+
+## Specificity Rules
+
+### Minimum exercise count
+Every strength session must include **4-8 exercises**. At minimum:
+1. 1 warmup/activation exercise (e.g. band walks, glute bridges, dead bugs)
+2. 2 compound movements (at least 1 bilateral, at least 1 unilateral/single-leg)
+3. 1 core/stability exercise
+
+### Exercise order (mandatory)
+Program exercises in this order:
+1. **Warmup/activation**: low-load movement prep targeting the session's focus areas
+2. **Compound bilateral**: squat, deadlift, hip thrust, or similar
+3. **Compound unilateral**: single-leg squat, Bulgarian split squat, single-leg RDL, step-up
+4. **Accessory/isolation**: calf raises, hamstring curls, lateral band work, or injury-specific
+5. **Core/stability**: plank variations, pallof press, dead bugs, bird dogs
+
+### Equipment context
+Read `data/coach/profile.json -> preferences.strength.equipment`.
+- When equipment is listed, reference specific implements (e.g. "16kg kettlebell", "resistance band").
+- When no equipment data or empty array, default to bodyweight exercises and include explicit load guidance: e.g. `"Use a weight where rep 8 of 10 feels like RPE 7 — if bodyweight only, slow the tempo to increase difficulty."`
+
+### Tempo specificity (mandatory)
+Every exercise's `tempo` must be explicit eccentric-pause-concentric format:
+- Good: `"3-1-2"` (3sec eccentric, 1sec pause, 2sec concentric)
+- Good: `"2-0-1"` (2sec eccentric, no pause, 1sec explosive concentric)
+- Bad: `"controlled"` or `"slow"` — always use numbers.
+
+### Superset/circuit notation
+When exercises are paired for time efficiency, note the pairing in `coach_notes`:
+- e.g. `"A1/A2 superset: Goblet squat + Band pull-apart. B1/B2: Single-leg RDL + Dead bug."`
+
+### Load guidance in main_set
+`main_set` must be human-readable and include all prescription details per exercise. Example:
+- `"A1. Goblet squat: 3x10 @ tempo 3-1-2, RPE 7 (RIR 3), rest 90sec"`
+- `"A2. Band pull-apart: 3x15 @ tempo 2-0-1, RPE 5 (RIR 5), rest 60sec"`
+- `"B1. Single-leg calf raise: 3x12 @ tempo 2-1-2, RPE 7 (RIR 3), rest 60sec"`
+
+### Session type examples
+- **Full-body resilience (35min)**: glute bridge activation 2x12 → goblet squat 3x10 → Bulgarian split squat 3x8/side → single-leg calf raise 3x12 → pallof press 3x10/side → dead bug 2x10/side
+- **Lower-body focus (40min)**: band walks 2x15/side → trap-bar deadlift 3x8 → single-leg RDL 3x8/side → hamstring curl 3x10 → calf raise 3x15 → Copenhagen plank 3x20sec/side
+- **Upper + core (30min)**: band pull-apart 2x15 → push-up 3x12 → single-arm row 3x10/side → face pull 3x12 → pallof press 3x10/side → bird dog 2x10/side

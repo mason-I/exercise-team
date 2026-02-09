@@ -104,7 +104,7 @@ For each topic area, dig deeper based on athlete responses:
 
 **Goals**: When the athlete mentions a target event, probe for specifics -- race distance, target time, which disciplines, what success looks like for them. Write findings to `data/coach/goals.json`.
 
-**Time Budget**: Use the athlete's recent load from `baseline.json` (`current_load_tolerance.weekly_hours_range`) as a starting point. Ask whether that reflects their ideal availability or if life has changed. If the athlete confirms their current volume is representative, derive `time_budget_hours` from the evidence (use the range midpoint as typical, low end as min, and round up ~15-20% above midpoint for max). If they correct it, use their stated values. Write to `data/coach/profile.json` -> `preferences.time_budget_hours`.
+**Time Budget**: If `baseline.json` includes `derived_time_budget`, use it as the starting point (it is recency-weighted from the last 4 weeks of actual training). Otherwise, fall back to `current_load_tolerance.weekly_hours_range`. Present the derived budget to the athlete and ask whether it reflects their ideal availability or if life has changed. If confirmed, write `derived_time_budget`'s `min`/`typical`/`max` to `data/coach/profile.json` -> `preferences.time_budget_hours`. If corrected, use the athlete's stated values. Also reference `baseline.discipline_baselines` to show the athlete their per-discipline breakdown (e.g., "You're averaging ~11h/week on the bike and ~1h running") -- this grounds the conversation in evidence.
 
 **Rest Day**: Look at which day has the fewest activities in their history. Propose it rather than asking cold. Write to `data/coach/profile.json` -> `preferences.rest_day`.
 
@@ -162,24 +162,44 @@ Before generating the plan, write `data/coach/strategy.json` with:
 - `weekly_priorities`: ordered list of training priorities for the coming weeks.
 - `phase_notes`: any strategic/mindset notes captured during discovery.
 
-### Trigger plan generation
-Run the full orchestrator to generate the first week plan and handle calendar sync:
+### Step 1: Generate the plan
+Run the orchestrator with `preview_only` so it generates the plan without prompting for calendar:
 
 ```bash
 bun .claude/skills/setup/scripts/setup_orchestrator.js \
   --auto-open-browser \
   --calendar-gate required_skippable \
-  --calendar-sync confirm_apply
+  --calendar-sync preview_only
 ```
 
-### Handling orchestrator outputs (post-discovery)
-The orchestrator should see all required fields filled and skip straight to plan generation:
-
+If the orchestrator returns:
 - `status: "needs_user_input"` + `stage: "bootstrap_check"` -- Bootstrap broken; re-run install.
 - `status: "needs_user_input"` + `stage: "intake"` -- Gaps remain; return to discovery conversation to address them.
-- `status: "needs_user_input"` + `stage: "calendar_preview"` -- Ask the athlete to confirm calendar writes using `AskUserQuestion` (this is the one place where the structured tool is appropriate).
-  - Re-run with `--calendar-sync-confirm yes` or `--calendar-sync-confirm no`.
-- `status: "completed"` -- Setup is done.
+- `status: "completed"` -- Plan is generated. Continue to Step 2.
+
+### Step 2: Present the plan to the athlete
+Read the generated plan file at the path returned in `summary.generated_plan` (typically `data/coach/plans/<week_start>.json`). Present a coaching-style weekly summary:
+- Day-by-day sessions: discipline, type, duration, and intent.
+- Key prescriptions and intensity targets.
+- Rest day placement and weekly load shape.
+- Any risk flags or notes.
+
+Ask the athlete what they think. Give them space to raise concerns, request swaps, or ask questions before moving on.
+
+### Step 3: Offer calendar sync
+Only after the athlete has reviewed and acknowledged the plan, naturally ask in conversation whether they'd like the sessions synced to their Google Calendar. Do not use `AskUserQuestion` for this -- keep it conversational.
+
+### Step 4: Apply calendar sync (if accepted)
+If the athlete wants calendar sync, run:
+
+```bash
+bun .claude/skills/schedule/scripts/sync_plan_to_calendar.js \
+  --plan data/coach/plans/<week_start>.json \
+  --apply \
+  --calendar-id primary
+```
+
+If they decline, skip this step. The plan remains in `data/coach/plans/` either way.
 
 ---
 
