@@ -35,6 +35,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     autoOpenBrowser: true,
     calendarId: DEFAULT_CALENDAR_ID,
     dryRun: false,
+    quiet: false,
     stravaClientId: "",
     stravaClientSecret: "",
   };
@@ -46,6 +47,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     if (arg === "--no-auto-open-browser") options.autoOpenBrowser = false;
     if (arg === "--calendar-id") options.calendarId = String(argv[i + 1] || DEFAULT_CALENDAR_ID);
     if (arg === "--dry-run") options.dryRun = true;
+    if (arg === "--quiet") options.quiet = true;
     if (arg === "--strava-client-id") options.stravaClientId = String(argv[i + 1] || "").trim();
     if (arg === "--strava-client-secret") options.stravaClientSecret = String(argv[i + 1] || "").trim();
   }
@@ -280,9 +282,9 @@ async function ensureGoogleAuth(options) {
 function determinePipelineArgs(projectDir) {
   const hasExistingActivities = fs.existsSync(resolveProjectPath(projectDir, PATHS.external.stravaActivities));
   if (hasExistingActivities) {
-    return ["--activities-mode", "window", "--window-days", "56", "--skip-google-auth"];
+    return ["--activities-mode", "window", "--window-days", "56", "--require-google-auth"];
   }
-  return ["--activities-mode", "all", "--skip-google-auth"];
+  return ["--activities-mode", "all", "--require-google-auth"];
 }
 
 async function runBootstrap(options) {
@@ -321,13 +323,16 @@ async function runBootstrap(options) {
         "init_workspace",
         "upsert_settings_env",
         "strava_auth",
-        "strava_pipeline_in_parallel_with_google_auth",
+        "strava_pipeline_including_google_auth",
       ],
       strava_auth_strategy: loadStravaCredentialState().refreshToken ? "refresh_only" : "interactive_if_needed",
-      google_auth_strategy: loadGoogleCredentialState().refreshToken ? "refresh_only" : "interactive_if_needed",
       pipeline_args: determinePipelineArgs(projectDir),
     };
-    process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+    if (!options.quiet) {
+      process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+    } else {
+      process.stdout.write(`${JSON.stringify({ ok: true, status: "dry_run", project_dir: projectDir }, null, 2)}\n`);
+    }
     return;
   }
 
@@ -341,47 +346,55 @@ async function runBootstrap(options) {
   }
 
   const pipelineArgs = determinePipelineArgs(projectDir);
-  const pipelinePromise = spawnScript(
-    projectDir,
-    ".claude/skills/setup/scripts/run_parallel_onboarding_phase.js",
-    pipelineArgs
-  );
-  const googleAuthPromise = ensureGoogleAuth(options);
+  const pipelinePromise = spawnScript(projectDir, ".claude/skills/setup/scripts/run_parallel_onboarding_phase.js", [
+    ...pipelineArgs,
+    ...(options.quiet ? ["--quiet"] : []),
+    ...(options.autoOpenBrowser ? ["--auto-open-browser"] : ["--no-auto-open-browser"]),
+  ]);
 
-  const [pipeline, googleAuth] = await Promise.all([pipelinePromise, googleAuthPromise]);
+  const pipeline = await pipelinePromise;
   if (!pipeline.ok) {
     throw new Error(
       `Strava pipeline failed (exit=${pipeline.code}${pipeline.signal ? `, signal=${pipeline.signal}` : ""}).`
     );
   }
-  if (!googleAuth.ok) {
-    throw new Error(`Google Calendar authentication failed: ${googleAuth.error || "unknown error"}`);
+  const gcal = loadGoogleCredentialState();
+  const calendarConnected = Boolean(gcal.clientId && gcal.clientSecret && gcal.refreshToken);
+  if (!calendarConnected) {
+    throw new Error("Google Calendar authentication failed: no refresh token present after OAuth.");
   }
 
   const finishedAt = new Date().toISOString();
-  const summary = {
-    ok: true,
-    status: "completed",
-    project_dir: projectDir,
-    started_at: startedAt,
-    finished_at: finishedAt,
-    settings_path: settingsPath,
-    bootstrap_state_path: bootstrapStatePath,
-    init_workspace: initWorkspace,
-    env_applied_keys: Object.keys(envPatch),
-    strava_auth: stravaAuth,
-    google_auth: googleAuth,
-    strava_pipeline: {
-      ok: pipeline.ok,
-      code: pipeline.code,
-      signal: pipeline.signal,
-      args: pipelineArgs,
-    },
-    artifacts: [],
-  };
+  const summary = options.quiet
+    ? {
+        ok: true,
+        status: "completed",
+        project_dir: projectDir,
+      }
+    : {
+        ok: true,
+        status: "completed",
+        project_dir: projectDir,
+        started_at: startedAt,
+        finished_at: finishedAt,
+        settings_path: settingsPath,
+        bootstrap_state_path: bootstrapStatePath,
+        init_workspace: initWorkspace,
+        env_applied_keys: Object.keys(envPatch),
+        strava_auth: stravaAuth,
+        strava_pipeline: {
+          ok: pipeline.ok,
+          code: pipeline.code,
+          signal: pipeline.signal,
+          args: pipelineArgs,
+        },
+        artifacts: [],
+      };
 
   writeJson(bootstrapStatePath, summary);
-  summary.artifacts = collectArtifacts(projectDir);
+  if (!options.quiet) {
+    summary.artifacts = collectArtifacts(projectDir);
+  }
   writeJson(bootstrapStatePath, summary);
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 }

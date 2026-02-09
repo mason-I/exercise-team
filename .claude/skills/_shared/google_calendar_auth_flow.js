@@ -135,10 +135,10 @@ function maybeOpenBrowser(url, logger) {
   if (process.platform !== "darwin") return;
   execFile("open", [url], (error) => {
     if (!error) {
-      logger("[calendar-auth] Opened browser automatically.");
+      logger("[Coaching Team] Opened browser automatically.");
       return;
     }
-    logger("[calendar-auth] Could not auto-open browser. Use the URL above.");
+    logger("[Coaching Team] Could not auto-open browser. Use the URL above.");
   });
 }
 
@@ -210,9 +210,8 @@ async function runOAuthInteractive(options = {}) {
 
   const launcherUrl = `http://localhost:${port}/auth`;
   logger("");
-  logger("[calendar-auth] Authorization required.");
-  logger(`[calendar-auth] Open this URL in your browser: ${launcherUrl}`);
-  logger("[calendar-auth] Complete consent, then return to the app.");
+  logger("[Coaching Team] Google Calendar authorization required.");
+  logger(`[Coaching Team] Open this URL in your browser: ${launcherUrl}`);
   logger("");
 
   if (autoOpenBrowser) {
@@ -342,9 +341,7 @@ async function runOAuthInteractive(options = {}) {
       finishReject(err);
     });
 
-    server.listen(port, () => {
-      logger(`[calendar-auth] Auth server listening on http://localhost:${port}`);
-    });
+    server.listen(port, () => {});
   });
 }
 

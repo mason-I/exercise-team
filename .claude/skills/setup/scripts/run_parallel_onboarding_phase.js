@@ -21,6 +21,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     includeGoogleAuth: true,
     requireGoogleAuth: false,
     dryRun: false,
+    quiet: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -35,6 +36,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     if (arg === "--skip-google-auth") options.includeGoogleAuth = false;
     if (arg === "--require-google-auth") options.requireGoogleAuth = true;
     if (arg === "--dry-run") options.dryRun = true;
+    if (arg === "--quiet") options.quiet = true;
   }
 
   if (!options.includeGoogleAuth) {
@@ -50,20 +52,23 @@ function parseArgs(argv = process.argv.slice(2)) {
   return options;
 }
 
-function runBunScript(projectDir, relScriptPath, args = [], { optional = false } = {}) {
+function runBunScript(projectDir, relScriptPath, args = [], { optional = false, quiet = false } = {}) {
   const scriptPath = path.join(projectDir, relScriptPath);
   const result = spawnSync(process.execPath, [scriptPath, ...args], {
     cwd: projectDir,
     env: process.env,
-    stdio: "inherit",
+    encoding: "utf-8",
+    stdio: quiet ? ["ignore", "pipe", "pipe"] : "inherit",
   });
 
   if (result.status === 0) return;
   if (optional) {
-    process.stderr.write(`[parallel-setup] Optional step failed: ${relScriptPath}\n`);
+    if (!quiet) process.stderr.write(`[Coaching Team] Optional step failed: ${relScriptPath}\n`);
+    if (quiet && result.stderr) process.stderr.write(String(result.stderr));
     return;
   }
-  throw new Error(`[parallel-setup] Step failed (${result.status}): ${relScriptPath}`);
+  if (quiet && result.stderr) process.stderr.write(String(result.stderr));
+  throw new Error(`[Coaching Team] Step failed (${result.status}): ${relScriptPath}`);
 }
 
 function buildStravaPipelineSteps(options) {
@@ -186,16 +191,15 @@ async function main() {
   let google = null;
   if (options.includeGoogleAuth) {
     result.google_auth.attempted = true;
-    process.stderr.write("[parallel-setup] Starting Google Calendar OAuth in parallel.\n");
     google = spawnGoogleOAuth(projectDir, options);
   } else {
-    process.stderr.write("[parallel-setup] Google Calendar OAuth skipped (--skip-google-auth).\n");
+    if (!options.quiet) process.stderr.write("[Coaching Team] Google Calendar OAuth skipped (--skip-google-auth).\n");
   }
 
   try {
     for (const step of steps) {
-      process.stderr.write(`[parallel-setup] ${step.label}...\n`);
-      runBunScript(projectDir, step.script, step.args, { optional: step.optional });
+      if (!options.quiet) process.stderr.write(`[Coaching Team] ${step.label}...\n`);
+      runBunScript(projectDir, step.script, step.args, { optional: step.optional, quiet: options.quiet });
     }
   } catch (error) {
     if (google && google.child && google.child.exitCode == null) {
@@ -205,7 +209,6 @@ async function main() {
   }
 
   if (google) {
-    process.stderr.write("[parallel-setup] Strava processing complete. Waiting for Google Calendar OAuth...\n");
     const googleResult = await google.done;
     if (googleResult.code !== 0) {
       if (options.requireGoogleAuth) {
@@ -218,25 +221,29 @@ async function main() {
       result.google_auth.ok = false;
       result.google_auth.optional_failure = true;
       result.ok = true;
-      process.stderr.write("[parallel-setup] Google Calendar OAuth failed, continuing because auth is optional.\n");
+      if (!options.quiet) {
+        process.stderr.write("[Coaching Team] Google Calendar OAuth failed, continuing because auth is optional.\n");
+      }
     } else {
       result.google_auth.ok = true;
     }
   }
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        ...result,
-        activities_mode: options.activitiesMode,
-        activities_out: options.outActivities,
-        snapshot_out: options.snapshotPath,
-        preferences_out: options.preferencesOut,
-      },
-      null,
-      2
-    )}\n`
-  );
+  if (!options.quiet) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          ...result,
+          activities_mode: options.activitiesMode,
+          activities_out: options.outActivities,
+          snapshot_out: options.snapshotPath,
+          preferences_out: options.preferencesOut,
+        },
+        null,
+        2
+      )}\n`
+    );
+  }
 }
 
 if (require.main === module) {

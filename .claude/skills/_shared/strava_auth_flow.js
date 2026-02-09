@@ -157,18 +157,17 @@ async function runOAuthInteractive(options = {}) {
   saveStravaConfig({ clientId: state.clientId, clientSecret: state.clientSecret });
 
   logger("");
-  logger("[strava-auth] Authorization required.");
-  logger(`[strava-auth] Open this URL in your browser: http://localhost:${port}/auth`);
-  logger("[strava-auth] Complete consent, then return to the app.");
+  logger(`[Coaching Team] Strava authorization required.`);
+  logger(`[Coaching Team] Open this URL in your browser: http://localhost:${port}/auth`);
   logger("");
 
   if (autoOpenBrowser && process.platform === "darwin") {
     execFile("open", [`http://localhost:${port}/auth`], (error) => {
       if (!error) {
-        logger("[strava-auth] Opened browser automatically.");
+        logger("[Coaching Team] Opened browser automatically.");
         return;
       }
-      logger("[strava-auth] Could not auto-open browser. Use the URL above.");
+      logger("[Coaching Team] Could not auto-open browser. Use the URL above.");
     });
   }
 
@@ -273,9 +272,7 @@ async function runOAuthInteractive(options = {}) {
       finishReject(err);
     });
 
-    server.listen(port, () => {
-      logger(`[strava-auth] Auth server listening on http://localhost:${port}`);
-    });
+    server.listen(port, () => {});
   });
 }
 
