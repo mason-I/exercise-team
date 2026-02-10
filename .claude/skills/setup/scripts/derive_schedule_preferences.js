@@ -47,13 +47,18 @@ function main() {
     throw new Error("--window-days must be a number >= 14");
   }
 
-  const inferred = deriveHabitAnchors(activities, asOfDate, options.windowDays);
+  const metricsContext = {
+    zones: snapshot?.zones?.heart_rate || null,
+    ftp: snapshot?.athlete?.ftp || null,
+  };
+  const inferred = deriveHabitAnchors(activities, asOfDate, options.windowDays, metricsContext);
   const payload = {
     schema_version: inferred.schema_version,
     generated_at: new Date().toISOString(),
     as_of_date: toIsoDate(asOfDate),
     window_days: inferred.window_days,
     habit_anchors: inferred.habit_anchors,
+    routine_template: inferred.routine_template || [],
     policy_defaults: inferred.policy_defaults,
   };
 

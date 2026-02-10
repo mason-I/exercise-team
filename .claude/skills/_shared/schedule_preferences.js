@@ -159,7 +159,68 @@ function canonicalTypeFromText(text) {
   return null;
 }
 
-function canonicalTypeFromActivity(activity, discipline) {
+function hrZoneFromZones(avgHr, zones) {
+  if (!avgHr || !Array.isArray(zones?.zones) || zones.zones.length < 5) return null;
+  const hr = Number(avgHr);
+  if (!Number.isFinite(hr)) return null;
+  for (let i = 0; i < zones.zones.length; i += 1) {
+    const z = zones.zones[i];
+    const min = Number(z.min);
+    const max = Number(z.max);
+    if (max === -1 && hr >= min) return i + 1;
+    if (hr >= min && hr < max) return i + 1;
+  }
+  return null;
+}
+
+function inferEffortFromMetrics(activity, discipline, metricsContext) {
+  if (!metricsContext || (discipline !== "run" && discipline !== "bike")) return null;
+
+  const durationSec =
+    Number(activity?.moving_time_sec ?? activity?.moving_time ?? activity?.elapsed_time_sec ?? activity?.elapsed_time) ||
+    0;
+  const durationMin = durationSec / 60;
+  const avgHr = Number(activity?.average_heartrate);
+  const hasHr = Number.isFinite(avgHr) && avgHr > 0;
+  const watts = Number(activity?.weighted_average_watts ?? activity?.average_watts);
+  const ftp = Number(metricsContext.ftp);
+  const hasPower = Number.isFinite(watts) && watts > 0 && Number.isFinite(ftp) && ftp > 0;
+
+  const short = durationMin < 60;
+  const medium = durationMin >= 60 && durationMin <= 120;
+  const long = durationMin > 120;
+
+  let hrZone = null;
+  if (hasHr && metricsContext.zones) {
+    hrZone = hrZoneFromZones(avgHr, metricsContext.zones);
+  }
+
+  const intensityFactor = hasPower ? watts / ftp : null;
+
+  if (short && hasHr && hrZone >= 4) return "interval";
+  if (short && hasPower && intensityFactor >= 0.9) return "vo2";
+  if (short && hasPower && intensityFactor >= 0.8 && intensityFactor < 0.9) return "tempo";
+  if (short && hasHr && hrZone === 3) return "tempo";
+
+  if (long && hasHr && (hrZone === 1 || hrZone === 2)) return "long";
+  if (long && hasPower && intensityFactor < 0.75) return "long";
+  if (long && !hasHr && !hasPower) return "long";
+
+  if (medium && hasHr && (hrZone === 1 || hrZone === 2)) return "easy";
+  if (short && hasHr && (hrZone === 1 || hrZone === 2)) return "recovery";
+
+  if (hasPower && intensityFactor < 0.65) return "recovery";
+  if (hasPower && intensityFactor >= 0.65 && intensityFactor < 0.8) return "easy";
+  if (hasPower && intensityFactor >= 0.8 && intensityFactor < 0.9) return "moderate";
+
+  if (hasHr && hrZone >= 4) return "interval";
+  if (hasHr && hrZone === 3) return "moderate";
+  if (hasHr && (hrZone === 1 || hrZone === 2)) return long ? "long" : "easy";
+
+  return null;
+}
+
+function canonicalTypeFromActivity(activity, discipline, metricsContext) {
   const fromFields = [
     activity?.session_type,
     activity?.workout_type,
@@ -172,6 +233,9 @@ function canonicalTypeFromActivity(activity, discipline) {
     .find(Boolean);
 
   if (fromFields) return fromFields;
+
+  const fromMetrics = inferEffortFromMetrics(activity, discipline, metricsContext);
+  if (fromMetrics) return fromMetrics;
 
   if (discipline === "swim") return "technique";
   if (discipline === "strength") return "strength";
@@ -268,7 +332,52 @@ function groupKey(parts) {
   return parts.map((part) => (part == null ? "*" : String(part))).join("|");
 }
 
-function deriveHabitAnchors(activities, asOfDate, windowDays = 56) {
+function minToHhMm(min) {
+  const m = Math.max(0, Math.min(1439, Math.round(Number(min) || 0)));
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+function buildRoutineTemplate(habitAnchors, windowDays) {
+  const byDw = habitAnchors?.by_discipline_weekday || [];
+  const byDwt = habitAnchors?.by_discipline_weekday_type || [];
+  const dwtByDw = new Map();
+  for (const a of byDwt) {
+    const k = groupKey([a.discipline, a.weekday]);
+    if (!dwtByDw.has(k)) dwtByDw.set(k, []);
+    dwtByDw.get(k).push(a);
+  }
+
+  const template = [];
+  for (const anchor of byDw) {
+    const topType = dwtByDw
+      .get(groupKey([anchor.discipline, anchor.weekday]))
+      ?.sort((a, b) => b.weighted_sample_count - a.weighted_sample_count)[0];
+    const typicalType = topType?.canonical_type || "moderate";
+    const weeksApprox = Math.round(windowDays / 7);
+    const evidence =
+      anchor.sample_count != null
+        ? `${anchor.sample_count} of ${weeksApprox} weeks, window (${minToHhMm(anchor.preferred_window_min_local)}-${minToHhMm(anchor.preferred_window_max_local)})`
+        : `window (${minToHhMm(anchor.preferred_window_min_local)}-${minToHhMm(anchor.preferred_window_max_local)})`;
+
+    template.push({
+      weekday: anchor.weekday,
+      discipline: anchor.discipline,
+      typical_type: typicalType,
+      typical_start_local: minToHhMm(anchor.preferred_start_min_local),
+      confidence: anchor.confidence || "low",
+      evidence,
+    });
+  }
+  return template.sort(
+    (a, b) =>
+      ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].indexOf(a.weekday) -
+      ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].indexOf(b.weekday)
+  );
+}
+
+function deriveHabitAnchors(activities, asOfDate, windowDays = 56, metricsContext = null) {
   const start = new Date(asOfDate.getTime());
   start.setUTCDate(start.getUTCDate() - (windowDays - 1));
 
@@ -285,7 +394,7 @@ function deriveHabitAnchors(activities, asOfDate, windowDays = 56) {
     const discipline = normalizeSport(activity.sport_type || activity.type);
     if (!discipline) continue;
 
-    const canonicalType = canonicalTypeFromActivity(activity, discipline);
+    const canonicalType = canonicalTypeFromActivity(activity, discipline, metricsContext);
     const weekday = dayName(dayIndex(date));
     const startMin = dateTimeParts.hour * 60 + dateTimeParts.minute;
     const hour = dateTimeParts.hour;
@@ -339,14 +448,17 @@ function deriveHabitAnchors(activities, asOfDate, windowDays = 56) {
     )
     .sort((a, b) => b.weighted_sample_count - a.weighted_sample_count);
 
+  const habitAnchors = {
+    by_discipline_weekday_type: byDisciplineWeekdayType,
+    by_discipline_weekday: byDisciplineWeekday,
+    by_discipline: byDiscipline,
+  };
+
   return {
     schema_version: 3,
     window_days: windowDays,
-    habit_anchors: {
-      by_discipline_weekday_type: byDisciplineWeekdayType,
-      by_discipline_weekday: byDisciplineWeekday,
-      by_discipline: byDiscipline,
-    },
+    habit_anchors: habitAnchors,
+    routine_template: buildRoutineTemplate(habitAnchors, windowDays),
     policy_defaults: { ...BASE_POLICY_DEFAULTS },
   };
 }
@@ -355,6 +467,7 @@ module.exports = {
   BASE_POLICY_DEFAULTS,
   CANONICAL_SESSION_TYPES,
   deriveHabitAnchors,
+  inferEffortFromMetrics,
   normalizeSport,
   activityDate,
   activityDateTimeParts,

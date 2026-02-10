@@ -39,8 +39,11 @@ bun .claude/skills/review-week/scripts/resolve_review_window.js --mode <current|
    - `data/external/strava/activities.json` (actual activities)
    - `data/coach/strava_snapshot.json` (zones, FTP, context)
    - `data/coach/baseline.json` (load narrative, confidence rationale, recent weekly totals)
-   - `data/coach/profile.json` (injury history, preferences)
+   - `data/coach/profile.json` (injury history, preferences, thresholds)
    - `data/coach/strategy.json` (phase intent, discipline focus)
+   - `data/coach/training_load.json` (CTL/ATL/TSB fitness model, ramp rate, injury risk -- see step 6f)
+   - `data/coach/macrocycle.json` (current phase and targets -- see step 6g)
+   - `data/coach/outcomes.json` (adherence history and adaptation signals -- see step 6h)
    - `data/coach/checkins/<date>.json` for this week (athlete subjective feedback)
    - Any prior check-ins from the last 2-4 weeks: `data/coach/checkins/` (for trend analysis -- see step 7)
 
@@ -90,8 +93,32 @@ Look for positive and negative adaptation signals:
 - **Negative**: HR at a given pace/power trending up (detraining or fatigue). RPE increasing at the same load (overreaching). Increasing frequency of missed sessions (motivation or recovery issue). Increasing injury complaints in check-ins.
 - Reference specific numbers: "Tuesday's tempo run was 5:10/km at 155bpm avg, vs. 5:15/km at 158bpm two weeks ago -- pace is improving at lower cardiac cost."
 
+### Fitness Model (CTL/ATL/TSB)
+If `data/coach/training_load.json` exists, include physiological context:
+- **CTL (fitness)**: Current chronic training load and trend over the last 4 weeks. Is it building, stable, or declining?
+- **ATL (fatigue)**: Current acute load. Relate to the athlete's subjective fatigue from check-ins.
+- **TSB (form)**: Current training stress balance. If deeply negative, the athlete is fatigued and may need recovery. If positive, the athlete is fresh.
+- **Ramp rate**: Week-over-week CTL change. Flag if > 7 (too aggressive) or < 0 (detraining).
+- **Injury risk**: Acute:chronic ratio and classification. If high/critical, this must be the top priority in next-week recommendations.
+- Present these as a coaching narrative, not raw numbers: "Your fitness (CTL) has built steadily from 55 to 62 over the past 4 weeks -- good progress. Current fatigue is elevated (TSB -18), which matches the tiredness you reported. A lighter week would let your body absorb these gains."
+
+### Macrocycle Phase Progress
+If `data/coach/macrocycle.json` exists, assess progress within the current phase:
+- What phase is the athlete in (base/build/peak/taper)?
+- How far through the phase are they (week X of Y)?
+- Are they on track for the phase's `ctl_exit_target`? If CTL is behind target, note it.
+- Are `transition_criteria` close to being met? List which are satisfied and which remain.
+- Is the deload pattern being respected?
+
+### Outcome Trends
+If `data/coach/outcomes.json` exists, reference historical patterns:
+- **Completion rate trend**: Is adherence improving or declining over recent weeks?
+- **Persistent friction**: Which sessions or days consistently have the lowest adherence?
+- **Adaptation signals**: Reference any pace/power/efficiency improvements detected by the outcome learning system.
+- **Recovery patterns**: Do the detected recovery gaps match the athlete's subjective experience from check-ins?
+
 ### Next-Week Implications
-Based on this week's adherence and adaptation signals, provide specific plan adjustments for next week:
+Based on this week's adherence, adaptation signals, fitness model, and macrocycle position, provide specific plan adjustments for next week:
 - If sessions were missed, should that volume be redistributed or absorbed? (Generally: absorb if 1 session missed, redistribute key sessions only if possible.)
 - If the athlete was consistently over-intensity, suggest a recovery-focused adjustment.
 - If the athlete was consistently under-intensity, suggest a slight progression.
@@ -117,12 +144,14 @@ If fewer than 2 check-ins exist, note limited longitudinal data and rely on this
    - **Adherence Score**: Quantified metrics from step 6.
    - **Volume Analysis**: Planned vs. actual, per-discipline, trend context.
    - **Intensity Compliance**: Per-session breakdown where data exists.
+   - **Fitness Model**: CTL/ATL/TSB narrative if `training_load.json` exists.
+   - **Macrocycle Progress**: Phase position and transition criteria progress if `macrocycle.json` exists.
    - **Key Wins**: Specific positives grounded in data.
    - **Key Misses**: What was missed and why it matters (or doesn't).
-   - **Adaptation Signals**: Positive and negative trends with evidence.
+   - **Adaptation Signals**: Positive and negative trends with evidence (from both manual analysis and `outcomes.json` signals).
    - **Check-in Trends**: Longitudinal fatigue/motivation/recovery patterns.
-   - **Next-Week Recommendations**: Specific, actionable adjustments.
-   - **Risk Flags**: Anything that needs attention before next week.
+   - **Next-Week Recommendations**: Specific, actionable adjustments informed by fitness model, macrocycle phase, and outcome patterns.
+   - **Risk Flags**: Anything that needs attention before next week (including injury risk from acute:chronic ratio).
    - **2-4 Follow-up Questions**: Targeted questions to fill gaps in understanding.
 
 Ground all numeric claims in Strava evidence and state uncertainty clearly.

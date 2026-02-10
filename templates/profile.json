@@ -56,6 +56,14 @@
       "notes": ""
     }
   },
+  "thresholds": {
+    "bike_ftp_watts": null,
+    "bike_ftp_source": "auto",
+    "run_threshold_pace_sec_per_km": null,
+    "run_threshold_source": "auto",
+    "swim_css_sec_per_100m": null,
+    "swim_css_source": "auto"
+  },
   "health": {
     "current_niggles": [],
     "injury_history_12mo": []

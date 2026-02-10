@@ -1720,6 +1720,81 @@ function hasAutomaticDownshift(plan) {
   return trainable.some((session) => /downshift|deloaded due to fatigue|reduced due to fatigue/i.test(String(session?.intent || "")));
 }
 
+function validateMacrocyclePhaseConsistency(plan, projectDir) {
+  const violations = [];
+  const macrocyclePath = path.join(projectDir, "data", "coach", "macrocycle.json");
+  const macrocycle = readJson(macrocyclePath);
+  if (!macrocycle || !Array.isArray(macrocycle.phases) || !macrocycle.current_phase_id) return violations;
+
+  const currentPhase = macrocycle.phases.find((p) => p.id === macrocycle.current_phase_id);
+  if (!currentPhase) return violations;
+
+  const planPhase = String(plan?.phase || "").toLowerCase();
+  const macroPhaseType = String(currentPhase.type || "").toLowerCase();
+
+  // Only flag if the plan explicitly sets a phase that contradicts the macrocycle
+  if (planPhase && macroPhaseType && planPhase !== macroPhaseType && planPhase !== "deload") {
+    // Deload can override any phase (it's a scheduled recovery)
+    violations.push(
+      violation(
+        "MACROCYCLE_PHASE_MISMATCH",
+        `Plan phase "${planPhase}" does not match macrocycle current phase "${macroPhaseType}" (${currentPhase.name}). ` +
+        `Update macrocycle.current_phase_id or align the plan phase.`
+      )
+    );
+  }
+
+  return violations;
+}
+
+function validateInjuryRiskFlags(plan, projectDir) {
+  const violations = [];
+  const trainingLoadPath = path.join(projectDir, "data", "coach", "training_load.json");
+  const trainingLoad = readJson(trainingLoadPath);
+  if (!trainingLoad) return violations;
+
+  const injuryRisk = String(trainingLoad.injury_risk || "").toLowerCase();
+  if (injuryRisk !== "high" && injuryRisk !== "critical") return violations;
+
+  // If injury risk is high/critical, verify the plan acknowledges it in risk flags
+  const riskFlags = Array.isArray(plan?.scheduling_risk_flags) ? plan.scheduling_risk_flags : [];
+  const hasInjuryRiskAcknowledgment = riskFlags.some((flag) => {
+    const text = typeof flag === "string"
+      ? flag
+      : `${flag?.id || ""} ${flag?.description || ""} ${flag?.mitigation || ""}`;
+    return /injury|acute.chronic|overload|training.load|risk/i.test(text);
+  });
+
+  if (!hasInjuryRiskAcknowledgment) {
+    violations.push(
+      violation(
+        "INJURY_RISK_UNACKNOWLEDGED",
+        `Training load injury risk is "${injuryRisk}" (acute:chronic ratio ${trainingLoad.acute_chronic_ratio}). ` +
+        `Plan scheduling_risk_flags must acknowledge elevated injury risk and describe mitigation.`
+      )
+    );
+  }
+
+  // If critical, check that no hard/very_hard sessions are planned
+  if (injuryRisk === "critical") {
+    const hardSessions = (plan?.sessions || []).filter((s) => {
+      const loadClass = String(s?.load_class || "").toLowerCase();
+      return loadClass === "hard" || loadClass === "very_hard";
+    });
+    if (hardSessions.length > 0) {
+      violations.push(
+        violation(
+          "INJURY_RISK_CRITICAL_HARD_SESSION",
+          `Training load injury risk is "critical" but plan contains ${hardSessions.length} hard/very_hard session(s). ` +
+          `All sessions must be moderate or easier when injury risk is critical.`
+        )
+      );
+    }
+  }
+
+  return violations;
+}
+
 function validateAskBeforeDownshift(plan, latestCheckin) {
   const violations = [];
   const triggerState = fatigueOrAdherenceTrigger(plan, latestCheckin);
@@ -2296,6 +2371,11 @@ function validateModelScheduledPlan(planPath, profile, options = {}) {
 
   const latestCheckin = options?.projectDir ? findLatestCheckin(options.projectDir) : null;
   violations.push(...validateAskBeforeDownshift(plan, latestCheckin));
+
+  if (options?.projectDir) {
+    violations.push(...validateMacrocyclePhaseConsistency(plan, options.projectDir));
+    violations.push(...validateInjuryRiskFlags(plan, options.projectDir));
+  }
 
   return violations;
 }

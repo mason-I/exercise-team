@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { spawnSync } = require("child_process");
 const { listEvents } = require("../../_shared/google_calendar_api");
 const { PATHS } = require("../../_shared/paths");
 const {
@@ -463,11 +464,29 @@ async function loadCalendarWindow(startIso, endIso, calendarId) {
   }
 }
 
+function ensureInferredPreferencesExist(inferredPath) {
+  if (fs.existsSync(inferredPath)) return;
+  const deriveScript = path.join(__dirname, "../../setup/scripts/derive_schedule_preferences.js");
+  if (!fs.existsSync(deriveScript)) {
+    return; // no derive script, proceed with null inferred
+  }
+  const result = spawnSync("bun", [deriveScript], {
+    cwd: path.resolve(__dirname, "../../../.."),
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    console.error(result.stderr?.toString() || "derive_schedule_preferences.js failed");
+    return;
+  }
+}
+
 async function main() {
   const options = parseArgs();
   if (!options.plan) {
     throw new Error("Missing --plan path.");
   }
+
+  ensureInferredPreferencesExist(options.inferred);
 
   const plan = readJson(options.plan);
   const profile = readJson(options.profile);
@@ -560,6 +579,7 @@ async function main() {
         by_discipline_weekday: [],
         by_discipline: [],
       },
+      routine_template: inferred?.routine_template || [],
       policy_defaults: inferred?.policy_defaults || { ...BASE_POLICY_DEFAULTS },
     },
     calendar_context: {

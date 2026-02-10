@@ -171,7 +171,7 @@ function main() {
     "1) Start with remaining sessions this week only (no historical sessions).",
     "2) Then add a short rationale/risk note.",
     "3) Then ask a short check-in question.",
-    "4) List artifact file paths last.",
+    "4) Do not append artifact file paths to the response.",
     "",
     `Today is ${weekday} ${todayIso} (day ${dayNum} of 7 in the plan week, ${daysRemaining} days remaining).`,
     `Plan week: ${weekStartIso} -> ${weekEndIso}`,

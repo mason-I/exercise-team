@@ -13,11 +13,14 @@ Deliver highly personalized, model‑driven coaching grounded in Strava evidence
 
 ## Core Files (Source of Truth)
 - `data/coach/strava_snapshot.json`
-- `data/coach/profile.json`
+- `data/coach/profile.json` (includes athlete-confirmed `thresholds`)
 - `data/coach/goals.json`
 - `data/coach/baseline_raw.json` (deterministic aggregates from Strava)
 - `data/coach/baseline.json` (model-interpreted baseline with coaching context)
-- `data/coach/strategy.json`
+- `data/coach/strategy.json` (links to macrocycle via `macrocycle_id`)
+- `data/coach/training_load.json` (TSS, CTL/ATL/TSB, thresholds, injury risk)
+- `data/coach/macrocycle.json` (periodization phases and targets)
+- `data/coach/outcomes.json` (adherence, adaptation signals, recovery patterns)
 - `data/coach/plans/YYYY-MM-DD.json`
 - `data/coach/checkins/YYYY-MM-DD.json` (optional)
 - `data/coach/reports/*`
@@ -38,6 +41,9 @@ When generating or updating a weekly plan, **delegate to the relevant discipline
 2. Provide each subagent a **Coach Packet** (inline in the prompt):
    - `data/coach/strava_snapshot.json`
    - `data/coach/baseline.json`, `data/coach/strategy.json`, `data/coach/profile.json`, `data/coach/goals.json`
+   - `data/coach/training_load.json` (CTL/ATL/TSB, thresholds, injury risk)
+   - `data/coach/macrocycle.json` (current phase targets)
+   - `data/coach/outcomes.json` (adherence patterns, adaptation signals)
    - `data/coach/plans/<week_start>.json`
    - `week_start`, `rest_day`, time budget, constraints
 3. Require a **JSON patch** response only (no prose) with `session_updates`, `swap_suggestions`, `risk_flags`.
@@ -62,7 +68,7 @@ When generating or updating a weekly plan, **delegate to the relevant discipline
 
 ## Output Expectations
 When responding to the user:
-- Reference the exact file paths you created/updated.
+- Do not append artifact or file path lists to responses. Mention specific files only when contextually relevant (e.g., explaining a decision).
 - Summarize decisions and note any risk flags or uncertainty.
 - Keep instructions concise and execution‑oriented.
 

@@ -23,6 +23,7 @@ allowed-tools:
   - Bash(bun .claude/skills/setup/scripts/sync_strava_activities.js*)
   - Bash(bun .claude/skills/coach-sync/scripts/build_strava_snapshot.js*)
   - Bash(bun .claude/skills/coach-sync/scripts/audit_bike_power_streams.js*)
+  - Bash(bun .claude/skills/coach-sync/scripts/build_training_load.js*)
   - Bash(bun .claude/skills/schedule/scripts/sync_plan_to_calendar.js*)
   - Read
   - Write
@@ -68,8 +69,9 @@ Read the following files silently to build your internal coaching brief:
 
 1. `data/coach/strava_snapshot.json` -- recent volume, session frequency, discipline split, equipment signals (power coverage, HR coverage), training gaps.
 2. `data/coach/baseline_raw.json` -- raw weekly totals, discipline hours, session counts, load tolerance stats, risk flags (deterministic output from the baseline script).
-3. `data/coach/profile.json` -- check what's already filled vs. template defaults.
-4. `data/coach/goals.json` -- check if primary goal is already set.
+3. `data/coach/training_load.json` -- auto-derived thresholds (FTP, run threshold pace, swim CSS), CTL/ATL/TSB fitness model, injury risk classification.
+4. `data/coach/profile.json` -- check what's already filled vs. template defaults.
+5. `data/coach/goals.json` -- check if primary goal is already set.
 
 ### Snapshot interpretation (model-driven)
 
@@ -133,6 +135,8 @@ For each topic area, dig deeper based on athlete responses:
 
 **Injuries & Health**: If the athlete mentions any pain, perform "Impact Discovery" -- ask what movements trigger it, how long it's been present, whether it's worsening or stable, and what they've tried. Write structured entries to `data/coach/profile.json` -> `health.current_niggles[]` with fields: `area`, `description`, `severity`, `impact`, `as_of_date`. If no issues, set `health.injury_context_status` to `"none_reported"`.
 
+**Training Thresholds**: Read auto-derived thresholds from `data/coach/training_load.json`. Present them naturally during conversation: e.g., "Your Strava data shows an FTP of 280W and I estimate your run threshold at about 4:50/km based on your recent efforts. Do those feel right?" If the athlete confirms, write the values to `data/coach/profile.json` -> `thresholds` with source `"athlete_confirmed"`. If they override, use their stated values. If thresholds could not be derived (source = `"unavailable"`), ask the athlete if they know their FTP / threshold pace / CSS.
+
 **Equipment & Environment**: Confirm or correct power meter / HR sensor / indoor trainer inferences. If the athlete lacks a power meter, confirm `bike_capabilities.power_meter_available = false`. Check pool access if swim is a goal discipline. Write to appropriate `profile.json` fields.
 
 **Strength Training**: Ask about equipment available, current habits, and goals. Write to `data/coach/profile.json` -> `preferences.strength`.
@@ -177,11 +181,28 @@ Proceed to plan generation only when BOTH conditions are met:
 
 If the validator still shows gaps but you believe discovery is done, address the remaining gaps explicitly with the athlete before proceeding.
 
+### Generate macrocycle.json (Periodization)
+Before generating the plan, create `data/coach/macrocycle.json` -- the multi-phase training architecture from now to the goal event. Read `data/coach/training_load.json` for current CTL and `data/coach/goals.json` for the target event date. Then:
+
+1. Calculate `total_weeks` from today to the goal event date.
+2. Divide the macrocycle into phases (typically: base -> build -> peak -> taper). Use these guidelines:
+   - **Base** (4-8 weeks): Aerobic foundation, volume emphasis. z1/z2 80%, z3 15%, z4+ 5%. Ramp rate 3-5 TSS/week.
+   - **Build** (6-10 weeks): Race-specific fitness. z1/z2 75%, z3 15%, z4+ 10%. Ramp rate 4-6 TSS/week.
+   - **Peak** (3-5 weeks): Race-specific sharpening. Volume drops 10-20%. Key sessions at race intensity.
+   - **Taper** (1-3 weeks): Volume drops 40-60%, intensity maintained. No new stimuli.
+3. Set `ctl_entry` for the first phase from `training_load.json` current CTL. Set `ctl_exit_target` for each phase to inform the next.
+4. Set `deload_pattern` per phase (default `"3:1"`, or `"2:1"` for peak/taper).
+5. Set `transition_criteria` for each phase -- measurable markers that gate advancement.
+6. Set `current_phase_id` to the first phase.
+
+If the athlete has no dated goal event (general fitness), create a rolling 12-week macrocycle with base -> build -> deload cycles.
+
 ### Finalize strategy.json
 Before generating the plan, write `data/coach/strategy.json` with:
 - `primary_goal`: copied from `goals.json`.
 - `phase_intent`: your coaching assessment of the current training phase (e.g., "General base building, 24 weeks to race").
-- `discipline_focus`: relative emphasis per discipline.
+- `macrocycle_id`: the `current_phase_id` from `macrocycle.json`, linking strategy to the active macrocycle phase.
+- `discipline_focus`: relative emphasis per discipline (informed by the current macrocycle phase's `discipline_emphasis`).
 - `weekly_priorities`: ordered list of training priorities for the coming weeks.
 - `phase_notes`: any strategic/mindset notes captured during discovery.
 
@@ -296,9 +317,10 @@ bun .claude/skills/setup/scripts/install_bootstrap.js --auto-open-browser
 ```
 
 ## Output checklist
-- `data/coach/profile.json` populated with athlete preferences, health, and discovery notes.
+- `data/coach/profile.json` populated with athlete preferences, health, thresholds, and discovery notes.
 - `data/coach/goals.json` populated with primary goal.
-- `data/coach/strategy.json` populated with phase intent and priorities.
+- `data/coach/macrocycle.json` generated with phased training architecture from now to goal event.
+- `data/coach/strategy.json` populated with phase intent, macrocycle reference, and priorities.
 - `data/coach/plans/YYYY-MM-DD.json` generated when discovery is complete.
 - `data/system/onboarding/session.json` updated with stage/status.
 
@@ -307,4 +329,4 @@ bun .claude/skills/setup/scripts/install_bootstrap.js --auto-open-browser
 - First section: remaining sessions this week only.
 - Then brief rationale/risk note.
 - Then short check-in question.
-- Artifact paths listed last.
+- Do not append artifact paths to the response.

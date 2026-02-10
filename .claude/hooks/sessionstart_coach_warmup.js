@@ -142,6 +142,34 @@ function buildSyncSteps() {
       required: true,
       timeoutMs: STEP_TIMEOUT_MS,
     },
+    {
+      script: ".claude/skills/coach-sync/scripts/build_training_load.js",
+      args: [
+        "--activities",
+        PATHS.external.stravaActivities,
+        "--snapshot",
+        PATHS.coach.snapshot,
+        "--profile",
+        PATHS.coach.profile,
+        "--out",
+        PATHS.coach.trainingLoad,
+      ],
+      required: false,
+      timeoutMs: STEP_TIMEOUT_MS,
+    },
+    {
+      script: ".claude/skills/coach-sync/scripts/build_outcomes.js",
+      args: [
+        "--activities",
+        PATHS.external.stravaActivities,
+        "--plans-dir",
+        PATHS.coach.plansDir,
+        "--out",
+        PATHS.coach.outcomes,
+      ],
+      required: false,
+      timeoutMs: STEP_TIMEOUT_MS,
+    },
   ];
 }
 
@@ -182,6 +210,8 @@ function buildStatusLines(projectDir) {
     { label: PATHS.system.stravaStats, path: resolveProjectPath(projectDir, PATHS.system.stravaStats) },
     { label: PATHS.system.stravaZones, path: resolveProjectPath(projectDir, PATHS.system.stravaZones) },
     { label: PATHS.coach.snapshot, path: resolveProjectPath(projectDir, PATHS.coach.snapshot) },
+    { label: PATHS.coach.trainingLoad, path: resolveProjectPath(projectDir, PATHS.coach.trainingLoad) },
+    { label: PATHS.coach.outcomes, path: resolveProjectPath(projectDir, PATHS.coach.outcomes) },
   ];
 
   const lines = ["[coach-warmup] data status:"];

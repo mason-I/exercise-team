@@ -1,0 +1,29 @@
+{
+  "goal_event": {
+    "name": "",
+    "date": "YYYY-MM-DD",
+    "disciplines": []
+  },
+  "created_at": "",
+  "total_weeks": 0,
+  "phases": [
+    {
+      "id": "base-1",
+      "name": "Base Building",
+      "type": "base",
+      "start_week": "YYYY-MM-DD",
+      "end_week": "YYYY-MM-DD",
+      "weeks": 0,
+      "volume_target_pct": 80,
+      "intensity_distribution": { "z1_z2": 80, "z3": 15, "z4_plus": 5 },
+      "ctl_entry": 0,
+      "ctl_exit_target": 0,
+      "ramp_rate_target": 4,
+      "discipline_emphasis": {},
+      "transition_criteria": [],
+      "deload_pattern": "3:1"
+    }
+  ],
+  "current_phase_id": "",
+  "phase_history": []
+}

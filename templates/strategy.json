@@ -5,10 +5,12 @@
     "disciplines": []
   },
   "phase_intent": "",
+  "macrocycle_id": null,
   "discipline_focus": {
     "run": "",
     "bike": "",
     "swim": ""
   },
-  "weekly_priorities": []
+  "weekly_priorities": [],
+  "phase_notes": ""
 }
