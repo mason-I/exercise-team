@@ -8,6 +8,7 @@ const PATHS = {
   stravaRoot: "data/external/strava",
   coach: {
     snapshot: "data/coach/strava_snapshot.json",
+    weekContext: "data/coach/week_context.json",
     profile: "data/coach/profile.json",
     goals: "data/coach/goals.json",
     baseline: "data/coach/baseline.json",

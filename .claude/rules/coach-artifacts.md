@@ -9,6 +9,7 @@ All coaching decisions are model-driven. The `data/coach/` directory is the sour
 
 ## Required files
 - `data/coach/strava_snapshot.json`
+- `data/coach/week_context.json` (week-to-date grounding: expected-by-now, ahead/behind)
 - `data/coach/profile.json`
 - `data/coach/goals.json`
 - `data/coach/baseline_raw.json` (deterministic aggregates)

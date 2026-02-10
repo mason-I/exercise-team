@@ -128,6 +128,27 @@ function buildSyncSteps() {
       timeoutMs: STEP_TIMEOUT_MS,
     },
     {
+      script: ".claude/skills/coach-sync/scripts/build_baseline.js",
+      args: ["--snapshot", PATHS.coach.snapshot, "--activities", PATHS.external.stravaActivities, "--out", PATHS.coach.baselineRaw],
+      required: true,
+      timeoutMs: STEP_TIMEOUT_MS,
+    },
+    {
+      script: ".claude/skills/coach-sync/scripts/build_week_context.js",
+      args: [
+        "--activities",
+        PATHS.external.stravaActivities,
+        "--profile",
+        PATHS.coach.profile,
+        "--plans-dir",
+        PATHS.coach.plansDir,
+        "--out",
+        PATHS.coach.weekContext,
+      ],
+      required: true,
+      timeoutMs: STEP_TIMEOUT_MS,
+    },
+    {
       script: ".claude/skills/coach-sync/scripts/audit_bike_power_streams.js",
       args: [
         "--activities",
@@ -210,6 +231,7 @@ function buildStatusLines(projectDir) {
     { label: PATHS.system.stravaStats, path: resolveProjectPath(projectDir, PATHS.system.stravaStats) },
     { label: PATHS.system.stravaZones, path: resolveProjectPath(projectDir, PATHS.system.stravaZones) },
     { label: PATHS.coach.snapshot, path: resolveProjectPath(projectDir, PATHS.coach.snapshot) },
+    { label: PATHS.coach.weekContext, path: resolveProjectPath(projectDir, PATHS.coach.weekContext) },
     { label: PATHS.coach.trainingLoad, path: resolveProjectPath(projectDir, PATHS.coach.trainingLoad) },
     { label: PATHS.coach.outcomes, path: resolveProjectPath(projectDir, PATHS.coach.outcomes) },
   ];

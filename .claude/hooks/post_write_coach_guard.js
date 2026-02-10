@@ -751,6 +751,13 @@ function validateCheckin(data) {
   requireKeys(data, ["date", "sleep", "soreness", "stress", "motivation", "pain", "constraints", "notes"], "checkin");
 }
 
+function validateWeekContext(data) {
+  requireKeys(data, ["as_of_date", "current_week", "expectation", "guidance"], "week_context");
+  requireKeys(data.current_week || {}, ["week_start", "week_end", "as_of_date", "day_number", "totals_to_date"], "week_context.current_week");
+  requireKeys(data.expectation || {}, ["basis", "pace"], "week_context.expectation");
+  requireKeys(data.guidance || {}, ["phrasing_rule", "question_rule"], "week_context.guidance");
+}
+
 function main() {
   const input = readStdinJson();
   const filePath = findFilePath(input);
@@ -764,6 +771,7 @@ function main() {
   if (base === "goals.json") return validateGoals(data);
   if (base === "baseline.json") return validateBaseline(data);
   if (base === "baseline_raw.json") return validateBaseline(data);
+  if (base === "week_context.json") return validateWeekContext(data);
   if (base === "strategy.json") return validateStrategy(data);
   if (filePath.includes(`${path.sep}checkins${path.sep}`)) return validateCheckin(data);
   if (filePath.includes(`${path.sep}plans${path.sep}`)) {

@@ -69,6 +69,7 @@ Read the following files silently to build your internal coaching brief:
 
 1. `data/coach/strava_snapshot.json` -- recent volume, session frequency, discipline split, equipment signals (power coverage, HR coverage), training gaps.
 2. `data/coach/baseline_raw.json` -- raw weekly totals, discipline hours, session counts, load tolerance stats, risk flags (deterministic output from the baseline script).
+2a. `data/coach/week_context.json` -- **week-to-date** grounding (day-of-week, current week totals so far, expected-by-now, ahead/behind). Use this to avoid mislabeling partial weeks as drop-offs.
 3. `data/coach/training_load.json` -- auto-derived thresholds (FTP, run threshold pace, swim CSS), CTL/ATL/TSB fitness model, injury risk classification.
 4. `data/coach/profile.json` -- check what's already filled vs. template defaults.
 5. `data/coach/goals.json` -- check if primary goal is already set.
@@ -84,6 +85,13 @@ After reading `strava_snapshot.json`, synthesize a coaching interpretation befor
 - **Notable gaps or anomalies**: Any weeks with zero activity? Sudden sport changes? Equipment changes? "No activity in week of Jan 12 -- possible illness or travel. Worth asking about."
 
 Use this interpretation to inform your opening observations and to guide the discovery conversation toward areas of genuine coaching interest rather than generic questions.
+
+### Week awareness (mandatory)
+
+After reading `week_context.json`:
+- Treat `current_week.totals_to_date` as **week-to-date** only. Never describe it as “this past week” unless `as_of_date` is the final day of the week.
+- If it’s early in the week (day 1-2 of 7), you may only say “so far this week” and you must avoid asserting a “sharp drop” without confirming context.
+- When asking about low volume, anchor it to concrete dates: “So far this week (Mon Feb 9 through Tue Feb 10) you’ve logged ~1h. Is this planned recovery, travel, illness, or just early-week timing?”
 
 ### Synthesize baseline.json (model-driven interpretation)
 

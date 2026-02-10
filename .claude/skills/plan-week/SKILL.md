@@ -48,6 +48,7 @@ bun .claude/skills/setup/scripts/derive_schedule_preferences.js
 ```
 5. Ground decisions in (read all before generating sessions):
    - `data/coach/strava_snapshot.json` -- after reading, interpret: What does the athlete's training actually look like? What's the session type mix (endurance/intensity/recovery)? Is volume building, stable, or declining? Any gaps or anomalies? What data quality constraints exist (power/HR coverage) that affect viable prescription types?
+   - `data/coach/week_context.json` -- week-to-date grounding (today, day number, completed-to-date, expected-by-now). Use this to avoid calling early-week volume a “drop”.
    - `data/coach/profile.json`
    - `data/coach/goals.json`
    - `data/coach/baseline_raw.json` (raw deterministic aggregates)
