@@ -238,6 +238,19 @@ async function cancelTrainingEvent({ eventId, reason, calendarId = null }) {
   return { calendarId: resolvedCalendarId, event };
 }
 
+async function deleteTrainingEvent({ eventId, calendarId = null }) {
+  const resolvedCalendarId = resolveDefaultCalendarId(calendarId);
+  const accessToken = await getCalendarAccessToken();
+  const { event: existing } = await getEvent({ eventId, calendarId: resolvedCalendarId });
+  ensureTrainingEvent(existing);
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeCalendarId(
+    resolvedCalendarId
+  )}/events/${encodeURIComponent(eventId)}`;
+  await requestJson("DELETE", url, null, accessToken);
+  return { calendarId: resolvedCalendarId, eventId: String(eventId) };
+}
+
 module.exports = {
   ensureTrainingSummary,
   ensureTrainingEvent,
@@ -246,4 +259,5 @@ module.exports = {
   createTrainingEvent,
   updateTrainingEvent,
   cancelTrainingEvent,
+  deleteTrainingEvent,
 };

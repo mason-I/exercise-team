@@ -5,6 +5,7 @@ const {
   createTrainingEvent,
   updateTrainingEvent,
   cancelTrainingEvent,
+  deleteTrainingEvent,
 } = require("../../_shared/google_calendar_api");
 
 function parseArgs() {
@@ -97,8 +98,18 @@ async function main() {
     return;
   }
 
+  if (command === "delete-training") {
+    const eventId = requireFlag(flags, "event-id");
+    const result = await deleteTrainingEvent({
+      eventId,
+      calendarId,
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
   throw new Error(
-    "Unknown command. Supported: list, create-training, update-training, cancel-training"
+    "Unknown command. Supported: list, create-training, update-training, cancel-training, delete-training"
   );
 }
 

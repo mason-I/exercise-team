@@ -6,7 +6,7 @@ const {
   listEvents,
   createTrainingEvent,
   updateTrainingEvent,
-  cancelTrainingEvent,
+  deleteTrainingEvent,
 } = require("../../_shared/google_calendar_api");
 
 function parseArgs() {
@@ -84,20 +84,37 @@ function overlaps(rangeA, rangeB) {
   return rangeA.start < rangeB.end && rangeB.start < rangeA.end;
 }
 
-function eventConflicts(slot, events, excludedEventId = null) {
+function isAllDayEvent(event) {
+  // Google Calendar: all-day events use start.date/end.date (no dateTime).
+  return Boolean(event?.start?.date && !event?.start?.dateTime);
+}
+
+function eventConflicts(slot, events, excludedEventId = null, options = {}) {
   const slotRange = parseSlotRange(slot);
-  if (!slotRange) return [];
+  if (!slotRange) return options.collectIgnored ? { conflicts: [], ignored: [] } : [];
   const conflicts = [];
+  const ignored = [];
+  const allowAnyConflicts = Boolean(options.allowAnyConflicts);
+  const allowAllDayConflicts = Boolean(options.allowAllDayConflicts);
+  const collectIgnored = Boolean(options.collectIgnored);
+  const ignoreTransparent = options.ignoreTransparent !== false;
 
   for (const event of events) {
     if (excludedEventId && String(event?.id || "") === String(excludedEventId)) continue;
+    if (String(event?.status || "").toLowerCase() === "cancelled") continue;
+    if (ignoreTransparent && String(event?.transparency || "").toLowerCase() === "transparent") continue;
     const eventRange = parseCalendarEventRange(event);
     if (!eventRange) continue;
     if (overlaps(slotRange, eventRange)) {
+      const allDay = isAllDayEvent(event);
+      if (allowAnyConflicts || (allowAllDayConflicts && allDay)) {
+        if (collectIgnored) ignored.push(event);
+        continue;
+      }
       conflicts.push(event);
     }
   }
-  return conflicts;
+  return collectIgnored ? { conflicts, ignored } : conflicts;
 }
 
 function sessionDurationMin(session) {
@@ -446,11 +463,40 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
+function resolvePlanDateRange(plan, sessionDates) {
+  const sessions = Array.isArray(plan?.sessions) ? plan.sessions : [];
+  const hasSessions = sessions.length > 0;
+
+  if (sessionDates.length) {
+    const startDate = sessionDates[0];
+    const endExclusive = addDaysIso(sessionDates[sessionDates.length - 1], 1);
+    return { startDate, endExclusive };
+  }
+
+  if (hasSessions) {
+    // If there are sessions but none have dates, this is a broken plan.
+    throw new Error("Plan has sessions but no session dates.");
+  }
+
+  // Plan shell case: allow empty sessions by falling back to week_start/week_end.
+  const weekStart = String(plan?.week_start || "").trim();
+  const weekEnd = String(plan?.week_end || "").trim();
+
+  if (parseDateOnly(weekStart)) {
+    const endInclusive = parseDateOnly(weekEnd) ? weekEnd : addDaysIso(weekStart, 6);
+    const endExclusive = addDaysIso(endInclusive, 1);
+    return { startDate: weekStart, endExclusive };
+  }
+
+  throw new Error("Plan has no session dates and is missing week_start.");
+}
+
 async function syncPlan({
   planPath,
   apply,
   calendarId = null,
   timeZone = null,
+  conflictPolicy = "strict",
 }) {
   const absolutePlanPath = path.resolve(planPath);
   const plan = readJson(absolutePlanPath);
@@ -468,12 +514,7 @@ async function syncPlan({
   const resolvedTimeZone = resolveTimeZone(plan, timeZone);
 
   const sessionDates = plan.sessions.map((s) => String(s.date || "")).filter(Boolean).sort();
-  if (!sessionDates.length) {
-    throw new Error("Plan has no session dates.");
-  }
-
-  const rangeStartDate = sessionDates[0];
-  const rangeEndDate = addDaysIso(sessionDates[sessionDates.length - 1], 1);
+  const { startDate: rangeStartDate, endExclusive: rangeEndDate } = resolvePlanDateRange(plan, sessionDates);
   const rangeStart = `${rangeStartDate}T00:00:00Z`;
   const rangeEnd = `${rangeEndDate}T00:00:00Z`;
 
@@ -502,6 +543,7 @@ async function syncPlan({
     calendar_id: resolvedCalendarId,
     timezone: resolvedTimeZone,
     apply,
+    conflict_policy: String(conflictPolicy || "strict"),
     scheduled: [],
     conflicts: [],
     unscheduled: [],
@@ -541,7 +583,33 @@ async function syncPlan({
       throw new Error(`Session ${session.id || "unknown-id"} is missing scheduled_start_local/end_local`);
     }
 
-    const conflicts = eventConflicts(planned.slot, items, existingEvent ? existingEvent.id : null);
+    const policy = String(conflictPolicy || "strict").trim().toLowerCase();
+    const conflictEval = eventConflicts(planned.slot, items, existingEvent ? existingEvent.id : null, {
+      allowAnyConflicts: policy === "allow_any" || policy === "allow-any" || policy === "allow",
+      allowAllDayConflicts:
+        policy === "allow_all_day" ||
+        policy === "allow-all-day" ||
+        policy === "allow_all_day_conflicts" ||
+        policy === "allow-all-day-conflicts",
+      collectIgnored: true,
+    });
+    const conflicts = conflictEval.conflicts || [];
+    const ignored = conflictEval.ignored || [];
+
+    if (ignored.length) {
+      results.warnings.push({
+        session_id: session.id || null,
+        code: "conflicts_ignored_by_policy",
+        conflict_policy: policy,
+        ignored_with: ignored.map((event) => ({
+          id: event.id || null,
+          summary: event.summary || "(untitled)",
+          all_day: isAllDayEvent(event),
+          start: event?.start?.dateTime || event?.start?.date || null,
+          end: event?.end?.dateTime || event?.end?.date || null,
+        })),
+      });
+    }
     if (conflicts.length) {
       if (apply) {
         session.calendar = {
@@ -646,18 +714,17 @@ async function syncPlan({
 
   if (apply) {
     for (const event of orphanCandidates) {
-      const canceled = await cancelTrainingEvent({
+      await deleteTrainingEvent({
         eventId: String(event.id),
-        reason: "Session removed or replaced in updated plan.",
         calendarId: resolvedCalendarId,
       });
-      results.canceled.push({ event_id: canceled.event?.id || event.id || null, action: "canceled" });
+      results.canceled.push({ event_id: event.id || null, action: "deleted" });
     }
     writeJson(absolutePlanPath, plan);
   } else {
     results.canceled = orphanCandidates.map((event) => ({
       event_id: event.id || null,
-      action: "would_cancel",
+      action: "would_delete",
     }));
   }
 
@@ -671,6 +738,7 @@ async function main() {
   const dryRun = Boolean(flags["dry-run"]);
   const calendarId = flags["calendar-id"] ? String(flags["calendar-id"]) : null;
   const timeZone = flags.timezone ? String(flags.timezone) : undefined;
+  const conflictPolicy = flags["conflict-policy"] ? String(flags["conflict-policy"]).trim() : "strict";
 
   if (apply === dryRun) {
     throw new Error("Specify exactly one mode: --dry-run or --apply");
@@ -681,6 +749,7 @@ async function main() {
     apply,
     calendarId,
     timeZone,
+    conflictPolicy,
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

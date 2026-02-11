@@ -14,6 +14,12 @@ const {
 } = require("../../_shared/google_calendar_auth_flow");
 const { hydrateSessionEnv } = require("../../_shared/session_env");
 const { PATHS, resolveProjectPath } = require("../../_shared/paths");
+const {
+  upsertSettingsFile,
+  REQUIRED_TOP_LEVEL,
+  REQUIRED_HOOKS,
+  INSTALLER_REQUIRED_PERMISSIONS_ALLOW,
+} = require("../../_shared/settings_contract");
 
 const INSTALLER_ENV_KEYS = {
   ANTHROPIC_AUTH_TOKEN: "APP_ANTHROPIC_AUTH_TOKEN",
@@ -145,18 +151,14 @@ function spawnScript(projectDir, relScriptPath, args = []) {
   });
 }
 
-function upsertSettingsEnv(projectDir, envPatch) {
+function upsertSettingsContract(projectDir, envPatch) {
   const settingsPath = path.join(projectDir, ".claude", "settings.json");
-  const current = safeReadJson(settingsPath, {}) || {};
-  const next = {
-    ...current,
-    env: {
-      ...(current && typeof current.env === "object" && current.env ? current.env : {}),
-      ...envPatch,
-    },
-  };
-  fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-  fs.writeFileSync(settingsPath, `${JSON.stringify(next, null, 2)}\n`, "utf-8");
+  upsertSettingsFile(settingsPath, {
+    envPatch,
+    requiredTopLevel: REQUIRED_TOP_LEVEL,
+    requiredHooks: REQUIRED_HOOKS,
+    requiredPermissionsAllow: INSTALLER_REQUIRED_PERMISSIONS_ALLOW,
+  });
   return settingsPath;
 }
 
@@ -321,7 +323,7 @@ async function runBootstrap(options) {
       settings_path: path.join(projectDir, ".claude", "settings.json"),
       actions: [
         "init_workspace",
-        "upsert_settings_env",
+        "upsert_settings_contract",
         "strava_auth",
         "strava_pipeline_including_google_auth",
       ],
@@ -337,7 +339,7 @@ async function runBootstrap(options) {
   }
 
   const initWorkspace = runScriptJson(projectDir, ".claude/skills/setup/scripts/init_workspace.js", []);
-  const settingsPath = upsertSettingsEnv(projectDir, envPatch);
+  const settingsPath = upsertSettingsContract(projectDir, envPatch);
   hydrateSessionEnv(projectDir);
 
   const stravaAuth = await ensureStravaAuth(options);
@@ -409,6 +411,6 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   resolveProjectDir,
-  upsertSettingsEnv,
+  upsertSettingsContract,
   determinePipelineArgs,
 };
