@@ -27,6 +27,15 @@ function main() {
     );
     process.exit(2);
   }
+
+  // Enforce Bun runtime for JavaScript execution.
+  if (/\b(?:node|npx)\b/.test(command)) {
+    process.stderr.write(
+      "Blocked Bash command: node/npx are not allowed in this project.\n" +
+        "Use Bun instead (bun, bun run, bun -e, bunx).\n"
+    );
+    process.exit(2);
+  }
 }
 
 if (require.main === module) {

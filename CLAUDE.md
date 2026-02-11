@@ -10,6 +10,7 @@ Deliver highly personalized, model‑driven coaching grounded in Strava evidence
 - **Model‑first**: Baseline, strategy, plans, reviews are model‑generated (no deterministic coaching logic).
 - **Inspectability**: All outputs must be saved as files in `data/coach/`.
 - **Transparency**: Explicitly note uncertainty, gaps, and assumptions.
+- **Runtime policy**: Use Bun only for JavaScript execution (`bun`, `bun run`, `bun -e`). Never run `node`/`npx`.
 
 ## Core Files (Source of Truth)
 - `data/coach/strava_snapshot.json`
