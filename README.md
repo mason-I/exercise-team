@@ -1,6 +1,6 @@
 # AI Coaching for Athletes
 
-This project gives you a personal AI coach for run, bike, swim and strength planning.
+This mvp gives you a personal AI coach for run, bike, swim and strength planning.
 
 It is designed for weekly use:
 - Build a realistic plan for your upcoming week
@@ -12,6 +12,9 @@ It is designed for weekly use:
 
 - **Strava**: activity history, trends, and workout evidence
 - **Google Calendar**: optional session sync so your plan appears on your calendar
+
+## Future functionality
+Plans to migrate to iOS app, proactivity with activity reviews and check ins etc, integrations with recovery wearables e.g. Oura + Whoop
 
 ## Core Commands
 
